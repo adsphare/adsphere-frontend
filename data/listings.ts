@@ -1,0 +1,42 @@
+export const listings = [
+  {
+    id: "1",
+    title: "Digital Billboard",
+    location: "New York, USA",
+    price: "$120/day",
+    type: "billboard",
+    description: "High traffic Times Square digital screen",
+  },
+  {
+    id: "2",
+    title: "Mall Screen Ad",
+    location: "Dubai, UAE",
+    price: "$90/day",
+    type: "billboard",
+    description: "Premium indoor mall advertising screen",
+  },
+  {
+    id: "3",
+    title: "TikTok Promotion",
+    location: "Global",
+    price: "$80/video",
+    type: "social",
+    description: "Influencer TikTok video promotion",
+  },
+  {
+    id: "4",
+    title: "Instagram Reel Ad",
+    location: "Global",
+    price: "$70/post",
+    type: "social",
+    description: "High engagement Instagram reel promotion",
+  },
+  {
+    id: "5",
+    title: "YouTube Sponsorship",
+    location: "Global",
+    price: "$150/video",
+    type: "video",
+    description: "Sponsored integration in YouTube content",
+  },
+];
