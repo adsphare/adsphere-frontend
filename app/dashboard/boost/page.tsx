@@ -12,37 +12,52 @@ export default function BoostButton({
   const [loading, setLoading] = useState(false);
 
   async function handleBoost(plan: "basic" | "premium") {
+    if (loading) return; // prevent double clicks
+
     setLoading(true);
 
-    const res = await fetch("/api/stripe/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        listingId,
-        userId,
-        plan,
-      }),
-    });
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId,
+          userId,
+          plan,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    window.location.href = data.url;
+      if (!data?.url) {
+        throw new Error("No checkout URL returned");
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      console.error("Boost error:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className="flex gap-2">
       <button
+        disabled={loading}
         onClick={() => handleBoost("basic")}
-        className="bg-yellow-500 text-black px-3 py-1 rounded text-xs font-bold"
+        className="bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed text-black px-3 py-1 rounded text-xs font-bold"
       >
-        Boost $5
+        {loading ? "Processing..." : "Boost $5"}
       </button>
 
       <button
+        disabled={loading}
         onClick={() => handleBoost("premium")}
-        className="bg-orange-500 text-black px-3 py-1 rounded text-xs font-bold"
+        className="bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-black px-3 py-1 rounded text-xs font-bold"
       >
-        Premium $10
+        {loading ? "Processing..." : "Premium $10"}
       </button>
     </div>
   );
