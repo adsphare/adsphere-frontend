@@ -1,32 +1,27 @@
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-};
+import { supabase } from "./supabase";
 
-const AUTH_KEY = "adsphere_user";
+export async function getUser() {
+  try {
+    const { data, error } = await supabase.auth.getUser();
 
-// Get user
-export function getUser(): User | null {
-  if (typeof window === "undefined") return null;
+    if (error) {
+      console.error("Auth error:", error.message);
+      return {
+        user: null,
+        error,
+      };
+    }
 
-  const data = localStorage.getItem(AUTH_KEY);
-  return data ? JSON.parse(data) : null;
-}
+    return {
+      user: data.user,
+      error: null,
+    };
+  } catch (err: any) {
+    console.error("Unexpected auth error:", err);
 
-// Login / Register (fake auth)
-export function login(name: string, email: string) {
-  const user: User = {
-    id: Date.now().toString(),
-    name,
-    email,
-  };
-
-  localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-  return user;
-}
-
-// Logout
-export function logout() {
-  localStorage.removeItem(AUTH_KEY);
+    return {
+      user: null,
+      error: err,
+    };
+  }
 }

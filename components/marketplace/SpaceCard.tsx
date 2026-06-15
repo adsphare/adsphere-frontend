@@ -1,38 +1,36 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Props = {
-  id: string;
-  title: string;
-  location: string;
-  price: string;
+  space: any;
 };
 
-export default function SpaceCard({
-  id,
-  title,
-  location,
-  price,
-}: Props) {
-  const router = useRouter();
-
+export default function SpaceCard({ space }: Props) {
   return (
-    <div
-      onClick={() => router.push(`/marketplace/${id}`)}
-      className="cursor-pointer bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all duration-300"
-    >
-      {/* Image Placeholder */}
-      <div className="h-40 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 mb-6" />
+    <div className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition">
 
-      {/* Title */}
-      <h3 className="text-xl font-semibold">{title}</h3>
+      {/* TITLE */}
+      <h3 className="text-lg font-semibold">
+        {space?.title || "Untitled Space"}
+      </h3>
 
-      {/* Location */}
-      <p className="text-gray-400 text-sm mt-2">{location}</p>
+      {/* LOCATION */}
+      <p className="text-sm text-gray-400 mt-1">
+        {space?.location || "No location"}
+      </p>
 
-      {/* Price */}
-      <p className="text-blue-400 mt-4 font-semibold">{price}</p>
+      {/* PRICE */}
+      <p className="text-blue-400 font-bold mt-2">
+        ${space?.price || 0}
+      </p>
+
+      {/* ACTION */}
+      <Link
+        href={`/marketplace/${space?.id}`}
+        className="inline-block mt-4 text-sm text-white bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded"
+      >
+        View Details
+      </Link>
+
     </div>
   );
 }

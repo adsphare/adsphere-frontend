@@ -1,56 +1,65 @@
-export type Listing = {
+import { create } from "zustand";
+
+/**
+ * AdSphere Global Store
+ * - user session
+ * - selected listing
+ * - UI state
+ * - boost system state (future payments)
+ */
+
+type User = {
   id: string;
-  userId: string;
-  title: string;
-  location: string;
-  price: string;
-  type: string;
-  description: string;
+  email?: string;
+} | null;
+
+type Listing = any;
+
+type StoreState = {
+  // AUTH
+  user: User;
+  setUser: (user: User) => void;
+
+  // LISTINGS
+  selectedListing: Listing | null;
+  setSelectedListing: (listing: Listing | null) => void;
+
+  // UI STATE
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
+
+  // BOOST SYSTEM (future monetization)
+  boostModalOpen: boolean;
+  openBoostModal: () => void;
+  closeBoostModal: () => void;
+
+  // CAMPAIGNS (future)
+  selectedCampaignId: string | null;
+  setSelectedCampaignId: (id: string | null) => void;
 };
 
-const STORAGE_KEY = "adsphere_listings";
+export const useStore = create<StoreState>((set) => ({
+  // AUTH
+  user: null,
+  setUser: (user) => set({ user }),
 
-// default data
-const defaultListings: Listing[] = [
-  {
-    id: "1",
-    userId: "system",
-    title: "Digital Billboard",
-    location: "New York, USA",
-    price: "$120/day",
-    type: "billboard",
-    description: "High traffic Times Square screen",
-  },
-  {
-    id: "2",
-    userId: "system",
-    title: "TikTok Promotion",
-    location: "Global",
-    price: "$80/video",
-    type: "social",
-    description: "Influencer TikTok promotion",
-  },
-];
+  // LISTINGS
+  selectedListing: null,
+  setSelectedListing: (listing) =>
+    set({ selectedListing: listing }),
 
-// load from localStorage
-function getListings(): Listing[] {
-  if (typeof window === "undefined") return defaultListings;
+  // UI
+  sidebarOpen: false,
+  toggleSidebar: () =>
+    set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : defaultListings;
-}
+  // BOOST
+  boostModalOpen: false,
+  openBoostModal: () => set({ boostModalOpen: true }),
+  closeBoostModal: () => set({ boostModalOpen: false }),
 
-// save to localStorage
-function saveListings(listings: Listing[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(listings));
-}
-
-// store system
-export const store = {
-  listings: getListings(),
-
-  addListing(listing: Listing) {
-    this.listings.push(listing);
-    saveListings(this.listings);
-  },
-};
+  // CAMPAIGNS
+  selectedCampaignId: null,
+  setSelectedCampaignId: (id) =>
+    set({ selectedCampaignId: id }),
+}));

@@ -1,5 +1,5 @@
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+
 
 export default function RootLayout({
   children,
@@ -8,9 +8,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-[#050816] text-white">
-        <Navbar />
-        {children}
+      <body className="bg-[#050816] text-white antialiased">
+
+        
+
+        {/* PAGE CONTENT */}
+        <main className="min-h-screen">
+          {children}
+        </main>
+
+        
+
       </body>
     </html>
   );

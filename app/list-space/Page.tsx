@@ -1,91 +1,79 @@
 "use client";
 
 import { useState } from "react";
-import Navbar from "@/components/layout/Navbar";
-import Button from "@/components/ui/Button";
-import { store } from "@/lib/store";
-import { getUser } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function ListSpacePage() {
   const router = useRouter();
 
-  const [title, setTitle] = useState("");
-  const [location, setLocation] = useState("");
-  const [price, setPrice] = useState("");
-  const [description, setDescription] = useState("");
+  const [form, setForm] = useState({
+    title: "",
+    location: "",
+    price: "",
+    type: "billboard",
+    image: "",
+  });
 
-  const handleSubmit = () => {
-    const user = getUser();
+  function update(field: string, value: string) {
+    setForm((p) => ({ ...p, [field]: value }));
+  }
 
-    if (!user) {
-      alert("Please login first");
-      return;
-    }
+  async function submit() {
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
 
-    const newListing = {
-      id: Date.now().toString(),
-      userId: user.id,
-      title,
-      location,
-      price,
-      type: "billboard",
-      description,
-    };
+    if (!user) return;
 
-    store.addListing(newListing);
+    await supabase.from("listings").insert({
+      ...form,
+      user_id: user.id,
+      views: 0,
+      boost_score: 0,
+      created_at: new Date().toISOString(),
+    });
 
     router.push("/marketplace");
-  };
+  }
 
   return (
-    <main className="min-h-screen bg-[#050816] text-white">
+    <main className="max-w-2xl mx-auto space-y-4">
 
-      <Navbar />
+      <h1 className="text-2xl font-bold">Create Listing</h1>
 
-      <section className="max-w-3xl mx-auto px-6 py-20">
+      <input className="input" placeholder="Title"
+        onChange={(e) => update("title", e.target.value)}
+      />
 
-        <h1 className="text-4xl font-bold mb-8">
-          Create Listing
-        </h1>
+      <input className="input" placeholder="Location"
+        onChange={(e) => update("location", e.target.value)}
+      />
 
-        <div className="space-y-4">
+      <input className="input" placeholder="Price"
+        onChange={(e) => update("price", e.target.value)}
+      />
 
-          <input
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-4 rounded-xl bg-white/5 border border-white/10"
-          />
+      <input className="input" placeholder="Image URL"
+        onChange={(e) => update("image", e.target.value)}
+      />
 
-          <input
-            placeholder="Location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full p-4 rounded-xl bg-white/5 border border-white/10"
-          />
+      <button
+        onClick={submit}
+        className="w-full py-3 bg-blue-600 rounded"
+      >
+        Create
+      </button>
 
-          <input
-            placeholder="Price"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full p-4 rounded-xl bg-white/5 border border-white/10"
-          />
-
-          <textarea
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-4 h-32 rounded-xl bg-white/5 border border-white/10"
-          />
-
-          <Button onClick={handleSubmit}>
-            Publish Listing
-          </Button>
-
-        </div>
-
-      </section>
+      <style jsx>{`
+        .input {
+          width: 100%;
+          padding: 12px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: white;
+        }
+      `}</style>
 
     </main>
   );

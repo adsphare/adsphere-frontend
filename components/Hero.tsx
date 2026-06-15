@@ -1,105 +1,94 @@
-import Button from "./Button";
+"use client";
 
-{/* Hero Section */}
-<section className="relative overflow-hidden">
+import Link from "next/link";
+import Image from "next/image";
 
-  {/* Background Glow */}
-  <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-600/20 blur-[200px] rounded-full" />
+export default function Hero() {
+  return (
+    <section className="relative overflow-hidden bg-[#050816]">
 
-  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[1200px] h-[400px] bg-blue-500/10 blur-[180px] rounded-full" />
+      {/* GLOWS */}
+      <div className="absolute top-0 left-0 w-[700px] h-[700px] bg-blue-600/20 blur-[150px] rounded-full" />
+      <div className="absolute bottom-0 right-0 w-[700px] h-[700px] bg-blue-500/10 blur-[150px] rounded-full" />
 
-  <div className="max-w-7xl mx-auto px-6 py-28 grid lg:grid-cols-2 gap-16 items-center">
+      <div className="relative max-w-7xl mx-auto px-6 min-h-[90vh] flex items-center">
 
-    {/* Left Side */}
-    <div className="relative z-10">
+        <div className="grid lg:grid-cols-2 gap-16 items-center w-full">
 
-      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8">
+          {/* LEFT */}
+          <div>
 
-        <div className="w-2 h-2 bg-blue-500 rounded-full" />
+            <div className="inline-flex px-4 py-2 rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-300 text-sm mb-6">
+              Visibility Operating System
+            </div>
 
-        <span className="text-sm text-gray-300">
-          The Future of Visibility is Here
-        </span>
+            <h1 className="text-5xl md:text-7xl font-bold leading-tight">
+              The Future of
+              <span className="block text-blue-500">
+                Visibility
+              </span>
+            </h1>
 
-      </div>
+            <p className="mt-6 text-white/50 text-lg max-w-xl">
+              Adsphere connects creators, billboards, digital screens,
+              retail spaces and advertisers into one unified marketplace.
+            </p>
 
-      <h1 className="text-6xl lg:text-7xl font-bold leading-tight">
+            <div className="mt-10 flex flex-col sm:flex-row gap-4">
 
-        The Future of
+              <Link
+                href="/marketplace"
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium transition"
+              >
+                Explore Marketplace
+              </Link>
 
-        <br />
+              <Link
+                href="/list-space"
+                className="px-6 py-3 border border-white/10 bg-white/5 hover:bg-white/10 rounded-xl font-medium transition"
+              >
+                List Your Space
+              </Link>
 
-        <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-          Visibility
-        </span>
+            </div>
 
-      </h1>
+          </div>
 
-      <p className="mt-8 text-lg text-gray-400 max-w-xl leading-relaxed">
+          {/* RIGHT */}
+          <div className="relative flex justify-center">
 
-        AdSphere connects advertisers, creators, publishers,
-        and physical advertising spaces into one intelligent
-        visibility marketplace powered by AI.
+            {/* RING */}
+            <div className="absolute w-[450px] h-[450px] rounded-full border border-blue-500/20" />
 
-      </p>
+            <div className="absolute w-[350px] h-[350px] rounded-full bg-blue-500/20 blur-3xl" />
 
-      <div className="flex flex-wrap gap-4 mt-10">
+            {/* LOGO */}
+            <div className="relative animate-pulse">
+              <Image
+                src="/logo.png"
+                alt="Adsphere"
+                width={220}
+                height={220}
+                priority
+              />
+            </div>
 
-        <Button>
-          Launch Platform →
-        </Button>
+            {/* FLOATING CARDS */}
+            <div className="absolute top-10 -left-10 bg-white/5 border border-white/10 rounded-xl p-3 backdrop-blur">
+              <p className="text-xs text-white/50">Creators</p>
+              <p className="font-semibold">12K+</p>
+            </div>
 
-        <Button variant="secondary">
-          Explore Vision
-        </Button>
+            <div className="absolute bottom-10 -right-10 bg-white/5 border border-white/10 rounded-xl p-3 backdrop-blur">
+              <p className="text-xs text-white/50">Ad Spaces</p>
+              <p className="font-semibold">3.4K+</p>
+            </div>
 
-      </div>
-
-      <div className="flex items-center gap-4 mt-12">
-
-        <div className="flex -space-x-3">
-
-          <div className="w-10 h-10 rounded-full bg-gray-500 border border-[#050816]" />
-
-          <div className="w-10 h-10 rounded-full bg-gray-400 border border-[#050816]" />
-
-          <div className="w-10 h-10 rounded-full bg-gray-300 border border-[#050816]" />
+          </div>
 
         </div>
 
-        <p className="text-gray-400 text-sm">
-          Join advertisers, creators and space owners building the future of visibility.
-        </p>
-
       </div>
-
-    </div>
-
-    {/* Right Side */}
-    <div className="relative flex items-center justify-center">
-
-      <div className="absolute w-[550px] h-[550px] rounded-full border border-blue-500/20" />
-
-      <div className="absolute w-[450px] h-[450px] rounded-full border border-purple-500/20" />
-
-      <div className="absolute w-[400px] h-[400px] bg-blue-600/30 blur-[120px] rounded-full" />
-
-      <div className="relative flex items-center justify-center">
-
-        <img
-          src="/logo.png"
-          alt="AdSphere Logo"
-          className="w-[420px] h-auto drop-shadow-[0_0_80px_rgba(59,130,246,0.8)]"
-        />
-
-      </div>
-
-    </div>
-
-  </div>
-
-  {/* Bottom Glow Horizon */}
-
-  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-60" />
-
-</section>
+    </section>
+  );
+}

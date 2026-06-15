@@ -1,59 +1,59 @@
 "use client";
 
-import Button from "@/components/ui/Button";
-import { getUser, logout } from "@/lib/auth";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    setUser(getUser());
-  }, []);
-
-  const handleLogout = () => {
-    logout();
-    setUser(null);
-    router.push("/login");
-  };
+  const path = usePathname();
 
   return (
-    <header className="w-full border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+    <header className="w-full border-b border-white/10 bg-[#050816]/80 backdrop-blur-md sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
-        <h1 className="text-xl font-bold">
-          Ad<span className="text-blue-500">Sphere</span>
-        </h1>
+        {/* BRAND */}
+        <Link href="/" className="font-bold text-white tracking-wide">
+          AdSphere
+        </Link>
 
-        <nav className="flex items-center gap-6 text-sm text-gray-300">
-          <a href="/marketplace">Marketplace</a>
-          <a href="/dashboard">Dashboard</a>
-          <a href="/list-space">Create</a>
+        {/* NAV */}
+        <nav className="flex items-center gap-6 text-sm text-white/60">
+
+          <Link
+            href="/"
+            className={path === "/" ? "text-white" : "hover:text-white"}
+          >
+            Home
+          </Link>
+
+          <Link
+            href="/marketplace"
+            className={path === "/marketplace" ? "text-white" : "hover:text-white"}
+          >
+            Marketplace
+          </Link>
+
+          <Link
+            href="/dashboard"
+            className={path === "/dashboard" ? "text-white" : "hover:text-white"}
+          >
+            Dashboard
+          </Link>
+
+          <Link
+            href="/campaigns"
+            className={path === "/campaigns" ? "text-white" : "hover:text-white"}
+          >
+            Campaigns
+          </Link>
+
+          <Link
+            href="/list-space"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white"
+          >
+            List Space
+          </Link>
+
         </nav>
-
-        <div>
-          {user ? (
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-300">
-                {user.name}
-              </span>
-
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <Button onClick={() => router.push("/login")}>
-              Login
-            </Button>
-          )}
-        </div>
-
       </div>
     </header>
   );
