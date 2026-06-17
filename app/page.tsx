@@ -13,30 +13,30 @@ import {
 import { useEffect } from "react";
 
 export default function HomePage() {
-
   /* =========================
-     SCROLL → DEPTH ENGINE
+     SCROLL MAGNET ENGINE
   ========================= */
   const { scrollY } = useScroll();
 
-  const depth1 = useTransform(scrollY, [0, 800], [0, -120]);   // closest layer
-  const depth2 = useTransform(scrollY, [0, 800], [0, -60]);    // mid layer
-  const depth3 = useTransform(scrollY, [0, 800], [0, 80]);     // background push
+  // stronger “pull into sections”
+  const magnet1 = useTransform(scrollY, [0, 600], [0, -80]);
+  const magnet2 = useTransform(scrollY, [0, 600], [0, -40]);
+  const magnet3 = useTransform(scrollY, [0, 600], [0, 60]);
 
-  const smoothDepth1 = useSpring(depth1, { stiffness: 80, damping: 20 });
-  const smoothDepth2 = useSpring(depth2, { stiffness: 80, damping: 20 });
-  const smoothDepth3 = useSpring(depth3, { stiffness: 60, damping: 25 });
+  const smooth1 = useSpring(magnet1, { stiffness: 70, damping: 20 });
+  const smooth2 = useSpring(magnet2, { stiffness: 70, damping: 20 });
+  const smooth3 = useSpring(magnet3, { stiffness: 60, damping: 25 });
 
   /* =========================
-     MOUSE LIGHT FIELD
+     MOUSE GRAVITY FIELD
   ========================= */
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
   useEffect(() => {
     const move = (e: MouseEvent) => {
-      mouseX.set(e.clientX - window.innerWidth / 2);
-      mouseY.set(e.clientY - window.innerHeight / 2);
+      mouseX.set((e.clientX - window.innerWidth / 2) * 0.03);
+      mouseY.set((e.clientY - window.innerHeight / 2) * 0.03);
     };
 
     window.addEventListener("mousemove", move);
@@ -44,10 +44,10 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="relative min-h-screen bg-[#050816] text-white overflow-hidden">
+    <main className="relative min-h-screen bg-[#050816] text-white overflow-hidden scroll-smooth">
 
       {/* =========================
-         IMMERSIVE LIGHT FIELD
+         GLOW FIELD (MAGNET BACKDROP)
       ========================= */}
       <motion.div
         style={{ x: mouseX, y: mouseY }}
@@ -56,91 +56,74 @@ export default function HomePage() {
       />
 
       {/* =========================
-         BACKGROUND DEPTH LAYERS
+         HERO (MAGNET ZONE 1)
       ========================= */}
-      <motion.div style={{ y: smoothDepth3 }} className="absolute inset-0 pointer-events-none">
-
-        <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-blue-600/20 blur-[180px] rounded-full" />
-        <div className="absolute bottom-[-300px] right-[-200px] w-[800px] h-[800px] bg-purple-600/10 blur-[180px] rounded-full" />
-
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04),transparent_65%)]" />
-      </motion.div>
-
-      {/* =========================
-         HERO (CLOSEST LAYER)
-      ========================= */}
-      <motion.section style={{ y: smoothDepth1 }} className="relative z-10 pt-10">
-
+      <motion.section
+        style={{ y: smooth1 }}
+        className="relative z-10 pt-16 text-center"
+      >
         <Hero />
 
-        <div className="max-w-6xl mx-auto px-6 mt-10">
-
-          <motion.div
-            whileHover={{ scale: 1.03, rotateX: 2 }}
-            transition={{ type: "spring", stiffness: 120 }}
-            className="relative h-[560px] rounded-[36px] overflow-hidden border border-white/10"
-            style={{ perspective: 1200 }}
-          >
-            <div className="absolute inset-0 bg-blue-500/10 blur-3xl" />
-
+        <div className="mt-10 max-w-6xl mx-auto px-6">
+          <div className="relative h-[560px] rounded-[36px] overflow-hidden border border-white/10">
             <Image
               src="/showcase/hero.jpg"
-              alt="Hero"
+              alt="hero"
               fill
               className="object-cover scale-[1.1]"
             />
-          </motion.div>
+          </div>
         </div>
       </motion.section>
 
       {/* =========================
-         FLOATING TRUST TEXT (MID DEPTH)
+         TRUST STRIP (MAGNET ZONE 2)
       ========================= */}
-      <motion.section style={{ y: smoothDepth2 }} className="relative z-10 text-center py-12">
-
-        <p className="tracking-[0.35em] text-white/40 text-xs">
-          VISIBILITY NETWORK • REAL WORLD ADS • AI RANKING ENGINE
-        </p>
-
+      <motion.section
+        style={{ y: smooth2 }}
+        className="text-center py-12 text-white/40 tracking-[0.3em]"
+      >
+        VISIBILITY • AI RANKING • REAL WORLD ADS
       </motion.section>
 
       {/* =========================
-         METRICS (FLOATING IN SPACE)
+         METRICS (FLOAT MAGNET CARDS)
       ========================= */}
-      <motion.section style={{ y: smoothDepth2 }}
-        className="relative z-10 max-w-6xl mx-auto px-6 py-20 grid grid-cols-2 md:grid-cols-4 gap-6">
-
+      <motion.section
+        style={{ y: smooth2 }}
+        className="max-w-6xl mx-auto px-6 py-20 grid grid-cols-2 md:grid-cols-4 gap-6"
+      >
         {[
           ["1K+", "Listings"],
           ["300+", "Advertisers"],
           ["50+", "Cities"],
           ["24/7", "Uptime"],
-        ].map((i, idx) => (
+        ].map((item, i) => (
           <motion.div
-            key={idx}
-            whileHover={{ scale: 1.05, y: -8 }}
-            className="p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-2xl"
+            key={i}
+            whileHover={{ scale: 1.08, y: -10 }}
+            className="p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl"
           >
-            <h2 className="text-2xl font-bold text-blue-400">{i[0]}</h2>
-            <p className="text-white/40 text-sm mt-1">{i[1]}</p>
+            <h2 className="text-2xl font-bold text-blue-400">{item[0]}</h2>
+            <p className="text-white/40 text-sm">{item[1]}</p>
           </motion.div>
         ))}
-
       </motion.section>
 
       {/* =========================
-         MARKETPLACE (SPATIAL OBJECT)
+         MARKETPLACE (MAGNET PULL)
       ========================= */}
-      <motion.section style={{ y: smoothDepth2 }}
-        className="relative z-10 max-w-6xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-14 items-center">
-
+      <motion.section
+        style={{ y: smooth2 }}
+        className="max-w-6xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-14 items-center"
+      >
         <div>
           <h2 className="text-4xl font-semibold">
             Spatial <span className="text-blue-400">Marketplace</span>
           </h2>
 
           <p className="text-white/40 mt-4">
-            Listings behave like objects in a 3D visibility field.
+            Listings behave like magnetic objects in attention space.
           </p>
 
           <Link
@@ -152,38 +135,32 @@ export default function HomePage() {
         </div>
 
         <motion.div
-          whileHover={{ rotateY: 6, scale: 1.05 }}
-          transition={{ type: "spring", stiffness: 120 }}
+          whileHover={{ scale: 1.05, rotateY: 6 }}
           className="relative h-[380px] rounded-[32px] overflow-hidden border border-white/10"
-          style={{ perspective: 1200 }}
         >
-          <div className="absolute inset-0 bg-blue-500/10 blur-3xl" />
-
           <Image
             src="/showcase/marketplace.jpg"
-            alt="Marketplace"
+            alt="marketplace"
             fill
             className="object-cover scale-[1.08]"
           />
         </motion.div>
-
       </motion.section>
 
       {/* =========================
-         DASHBOARD (CONTROL PANEL)
+         DASHBOARD
       ========================= */}
-      <motion.section style={{ y: smoothDepth2 }}
-        className="relative z-10 max-w-6xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-14 items-center">
-
+      <motion.section
+        style={{ y: smooth2 }}
+        className="max-w-6xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-14 items-center"
+      >
         <motion.div
-          whileHover={{ rotateY: -6, scale: 1.05 }}
+          whileHover={{ scale: 1.05, rotateY: -6 }}
           className="relative h-[380px] rounded-[32px] overflow-hidden border border-white/10"
         >
-          <div className="absolute inset-0 bg-purple-500/10 blur-3xl" />
-
           <Image
             src="/showcase/dashboard.jpg"
-            alt="Dashboard"
+            alt="dashboard"
             fill
             className="object-cover scale-[1.08]"
           />
@@ -195,7 +172,7 @@ export default function HomePage() {
           </h2>
 
           <p className="text-white/40 mt-4">
-            Manage visibility, campaigns, and performance in real-time space.
+            Manage campaigns inside a magnetic control system.
           </p>
 
           <Link
@@ -205,65 +182,66 @@ export default function HomePage() {
             Open Panel
           </Link>
         </div>
-
       </motion.section>
 
       {/* =========================
-         ABOUT (DEPTH BACKDROP)
+         ABOUT (FLOAT ZONE)
       ========================= */}
-      <motion.section style={{ y: smoothDepth3 }}
-        className="relative z-10 max-w-6xl mx-auto px-6 py-28 text-center">
-
+      <motion.section
+        style={{ y: smooth3 }}
+        className="text-center max-w-6xl mx-auto px-6 py-28"
+      >
         <h2 className="text-4xl font-semibold">
           Built for the <span className="text-blue-400">Immersive Web</span>
         </h2>
 
-        <p className="text-white/40 mt-4 max-w-2xl mx-auto">
-          A new layer where attention, space, and data merge into one system.
+        <p className="text-white/40 mt-4 max-w-xl mx-auto">
+          Attention becomes a physical force in this system.
         </p>
 
-        <div className="relative mt-12 h-[460px] rounded-[36px] overflow-hidden border border-white/10">
+        <div className="mt-12 relative h-[460px] rounded-[36px] overflow-hidden border border-white/10">
           <Image
             src="/showcase/about.jpg"
-            alt="About"
+            alt="about"
             fill
             className="object-cover"
           />
         </div>
-
       </motion.section>
 
       {/* =========================
-         FINAL GRAVITY CTA
+         CTA
       ========================= */}
-      <section className="relative z-10 text-center py-36">
-
+      <section className="text-center py-32">
         <h2 className="text-5xl font-semibold">
-          Step Into the{" "}
-          <span className="text-blue-400">Visibility Layer</span>
+          Enter the <span className="text-blue-400">Magnetic Layer</span>
         </h2>
 
         <p className="text-white/40 mt-6 max-w-xl mx-auto">
-          This is not a website. It’s a spatial system for attention.
+          This is a living attention system, not a website.
         </p>
 
         <div className="mt-10 flex gap-4 justify-center">
-          <Link href="/list-space" className="px-7 py-3 bg-white text-black rounded-xl">
+          <Link
+            href="/list-space"
+            className="px-7 py-3 bg-white text-black rounded-xl"
+          >
             Start
           </Link>
 
-          <Link href="/marketplace" className="px-7 py-3 border border-white/15 rounded-xl">
+          <Link
+            href="/marketplace"
+            className="px-7 py-3 border border-white/15 rounded-xl"
+          >
             Explore
           </Link>
         </div>
-
       </section>
 
       {/* FOOTER */}
-      <footer className="relative z-10 py-10 text-center text-white/30 text-sm border-t border-white/5">
+      <footer className="py-10 text-center text-white/30 text-sm border-t border-white/5">
         © {new Date().getFullYear()} Adsphere
       </footer>
-
     </main>
   );
 }

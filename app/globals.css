@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+/* =========================
+   BASE SYSTEM
+========================= */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+
+  background: #050816;
+  color: white;
+
+  font-family: ui-sans-serif, system-ui;
+
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* =========================
+   GLOBAL BOX MODEL
+========================= */
+* {
+  box-sizing: border-box;
+}
+
+/* =========================
+   SECTION SNAP SYSTEM
+========================= */
+html {
+  scroll-snap-type: y mandatory;
+}
+
+section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* =========================
+   SCROLLBAR (CINEMATIC)
+========================= */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* =========================
+   SOFT BACKDROP GLOW FIELD
+========================= */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.03),
+    transparent 60%
+  );
+
+  z-index: 0;
+}
