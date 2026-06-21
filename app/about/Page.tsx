@@ -1,13 +1,24 @@
 export default function AboutPage() {
   return (
-    <div className="max-w-4xl mx-auto py-20 px-6">
-      <h1 className="text-5xl font-bold mb-6">About AdSphere</h1>
+    <main className="min-h-screen bg-[#050816] text-white px-6 py-16">
+      <div className="max-w-5xl mx-auto">
 
-      <p className="text-white/70 text-lg">
-        AdSphere is a marketplace that connects advertisers with
-        billboard owners, digital screens, event spaces, and other
-        advertising opportunities.
-      </p>
-    </div>
+        <h1 className="text-4xl font-bold">About AdSphere</h1>
+
+        <p className="text-white/60 mt-3 text-lg">
+          The next-generation marketplace for advertising space, creators, and digital visibility.
+        </p>
+
+        <div className="h-px bg-white/10 my-10" />
+
+        <section>
+          <h2 className="text-2xl font-semibold">What is AdSphere?</h2>
+          <p className="text-white/60 mt-3">
+            AdSphere is a unified advertising marketplace.
+          </p>
+        </section>
+
+      </div>
+    </main>
   );
 }

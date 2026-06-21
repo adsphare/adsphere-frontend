@@ -1,28 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { activateBoost } from "@/lib/boostService";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { tx_ref, listingId } = body;
+    const { tx_ref, listingId, plan } = await req.json();
 
-    if (!tx_ref || !listingId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Missing fields",
-        },
-        { status: 400 }
-      );
-    }
-
-    // VERIFY PAYMENT WITH CHAPA
-    const verifyRes = await fetch(
+    const res = await fetch(
       `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
       {
         headers: {
@@ -31,59 +14,34 @@ export async function POST(req: Request) {
       }
     );
 
-    const data = await verifyRes.json();
+    const data = await res.json();
 
-    // PAYMENT FAILED
-    if (!verifyRes.ok || data.status !== "success") {
-      return NextResponse.json({
-        success: false,
-        message: "Payment not verified",
-        data,
-      });
+    const isPaid =
+      data?.status === "success" &&
+      data?.data?.status === "success";
+
+    if (!isPaid) {
+      return NextResponse.json(
+        { success: false, message: "Payment not confirmed" },
+        { status: 400 }
+      );
     }
 
-    // ACTIVATE BOOST
-    const { error } = await supabase
-      .from("listings")
-      .update({
-        boost_score: 1,
-        boost_expires_at: new Date(
-          Date.now() + 7 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-      })
-      .eq("id", listingId);
-
-    if (error) {
-      console.log("Supabase error:", error);
-
-      return NextResponse.json({
-        success: false,
-        error: "Database update failed",
-      });
-    }
-
-    // UPDATE RANKING SCORE
-    const { error: rankError } = await supabase.rpc(
-      "update_listing_rank"
-    );
-
-    if (rankError) {
-      console.log("Ranking update error:", rankError);
-    }
+    await activateBoost({
+      listingId,
+      plan,
+      provider: "chapa",
+    });
 
     return NextResponse.json({
       success: true,
-      message: "Boost activated successfully",
+      message: "Boost activated",
     });
-
   } catch (err) {
-    console.log("VERIFY ERROR:", err);
+    console.error(err);
 
     return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-      },
+      { success: false, message: "Server error" },
       { status: 500 }
     );
   }

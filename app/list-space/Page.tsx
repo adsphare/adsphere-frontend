@@ -1,80 +1,97 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import ChatButton from "@/components/ChatButton";
 
-export default function ListSpacePage() {
-  const router = useRouter();
+export default async function ListingDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const { data: listing, error } = await supabase
+    .from("listings")
+    .select("*")
+    .eq("id", params.id)
+    .single();
 
-  const [form, setForm] = useState({
-    title: "",
-    location: "",
-    price: "",
-    type: "billboard",
-    image: "",
-  });
-
-  function update(field: string, value: string) {
-    setForm((p) => ({ ...p, [field]: value }));
-  }
-
-  async function submit() {
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData?.user;
-
-    if (!user) return;
-
-    await supabase.from("listings").insert({
-      ...form,
-      user_id: user.id,
-      views: 0,
-      boost_score: 0,
-      created_at: new Date().toISOString(),
-    });
-
-    router.push("/marketplace");
+  if (error || !listing) {
+    return (
+      <main className="p-10 text-white bg-[#050816] min-h-screen">
+        Listing not found
+      </main>
+    );
   }
 
   return (
-    <main className="max-w-2xl mx-auto space-y-4">
+    <main className="min-h-screen bg-[#050816] text-white">
 
-      <h1 className="text-2xl font-bold">Create Listing</h1>
+      {/* HERO IMAGE */}
+      <div className="h-[400px] w-full overflow-hidden">
+        <img
+          src={listing.image || "/placeholder.png"}
+          className="w-full h-full object-cover"
+        />
+      </div>
 
-      <input className="input" placeholder="Title"
-        onChange={(e) => update("title", e.target.value)}
-      />
+      {/* CONTENT */}
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
 
-      <input className="input" placeholder="Location"
-        onChange={(e) => update("location", e.target.value)}
-      />
+        {/* TITLE + PRICE */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold">{listing.title}</h1>
+            <p className="text-white/40 mt-1">
+              📍 {listing.location}
+            </p>
+          </div>
 
-      <input className="input" placeholder="Price"
-        onChange={(e) => update("price", e.target.value)}
-      />
+          <div className="text-2xl font-bold text-green-400">
+            ${listing.price}
+          </div>
+        </div>
 
-      <input className="input" placeholder="Image URL"
-        onChange={(e) => update("image", e.target.value)}
-      />
+        {/* DESCRIPTION */}
+        <p className="text-white/70 leading-relaxed">
+          {listing.description}
+        </p>
 
-      <button
-        onClick={submit}
-        className="w-full py-3 bg-blue-600 rounded"
-      >
-        Create
-      </button>
+        {/* METRICS (if creator/ad space) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
 
-      <style jsx>{`
-        .input {
-          width: 100%;
-          padding: 12px;
-          border-radius: 10px;
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          color: white;
-        }
-      `}</style>
+          {listing.followers && (
+            <div className="p-4 bg-white/5 rounded-xl">
+              <p className="text-white/40">Followers</p>
+              <p className="font-semibold">{listing.followers}</p>
+            </div>
+          )}
 
+          {listing.average_views && (
+            <div className="p-4 bg-white/5 rounded-xl">
+              <p className="text-white/40">Avg Views</p>
+              <p className="font-semibold">{listing.average_views}</p>
+            </div>
+          )}
+
+          {listing.engagement_rate && (
+            <div className="p-4 bg-white/5 rounded-xl">
+              <p className="text-white/40">Engagement</p>
+              <p className="font-semibold">{listing.engagement_rate}%</p>
+            </div>
+          )}
+
+          {listing.daily_traffic && (
+            <div className="p-4 bg-white/5 rounded-xl">
+              <p className="text-white/40">Daily Traffic</p>
+              <p className="font-semibold">{listing.daily_traffic}</p>
+            </div>
+          )}
+
+        </div>
+
+        {/* CHAT CTA */}
+        <div className="pt-4">
+          <ChatButton listing={listing} />
+        </div>
+
+      </div>
     </main>
   );
 }

@@ -1,64 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import BoostButton from "@/components/BoostButton";
+import PaymentModal from "@/components/PaymentModal";
+import { supabase } from "@/lib/supabase";
 
-export default function BoostButton({
-  listingId,
-  userId,
-}: {
-  listingId: string;
-  userId: string;
-}) {
-  const [loading, setLoading] = useState(false);
+export default function BoostPage() {
+  const [open, setOpen] = useState(false);
 
-  async function handleBoost(plan: "basic" | "premium") {
-    if (loading) return; // prevent double clicks
-
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listingId,
-          userId,
-          plan,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!data?.url) {
-        throw new Error("No checkout URL returned");
-      }
-
-      window.location.href = data.url;
-    } catch (error) {
-      console.error("Boost error:", error);
-      alert("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  // real user + listing should come from DB in your app
+  const listingId = "demo-listing-id";
+  const userId = "demo-user-id";
 
   return (
-    <div className="flex gap-2">
-      <button
-        disabled={loading}
-        onClick={() => handleBoost("basic")}
-        className="bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed text-black px-3 py-1 rounded text-xs font-bold"
-      >
-        {loading ? "Processing..." : "Boost $5"}
-      </button>
+    <main className="min-h-screen bg-[#050816] text-white p-10">
+      <h1 className="text-3xl font-bold mb-6">Boost Center 🚀</h1>
 
-      <button
-        disabled={loading}
-        onClick={() => handleBoost("premium")}
-        className="bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-black px-3 py-1 rounded text-xs font-bold"
-      >
-        {loading ? "Processing..." : "Premium $10"}
-      </button>
-    </div>
+      <BoostButton onClick={() => setOpen(true)} />
+
+      <PaymentModal
+        open={open}
+        onClose={() => setOpen(false)}
+        listingId={listingId}
+        userId={userId}
+      />
+    </main>
   );
 }

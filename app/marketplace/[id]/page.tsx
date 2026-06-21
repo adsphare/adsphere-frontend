@@ -1,254 +1,179 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { createDeal } from "@/lib/messaging/chats";
 
-/* =========================
-   BOOST CHECK
-========================= */
-function isBoostActive(item: any = {}) {
-  if (!item?.boost_score || item.boost_score <= 0) return false;
-  if (!item.boost_expires_at) return true;
-  return new Date(item.boost_expires_at) > new Date();
-}
+export default function ChatPage({ params }: { params: { id: string } }) {
+  const conversationId = params.id;
 
-export default function ListingDetailPage() {
-  const params = useParams();
-  const id = params?.id as string;
+  const [messages, setMessages] = useState<any[]>([]);
+  const [conversation, setConversation] = useState<any>(null);
+  const [input, setInput] = useState("");
+  const [user, setUser] = useState<any>(null);
 
-  const [listing, setListing] = useState<any>(null);
-  const [related, setRelated] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!id) return;
-    fetchListing();
-  }, [id]);
+    init();
+  }, []);
 
-  async function fetchListing() {
-    const { data, error } = await supabase
-      .from("listings")
+  async function init() {
+    const { data: auth } = await supabase.auth.getUser();
+    setUser(auth.user);
+
+    const { data: conv } = await supabase
+      .from("conversations")
       .select("*")
-      .eq("id", id)
+      .eq("id", conversationId)
       .single();
 
-    if (error) {
-      setLoading(false);
-      return;
-    }
+    setConversation(conv);
 
-    setListing(data);
-    setLoading(false);
-
-    if (data) {
-      fetchRelated(data);
-      trackView();
-    }
+    loadMessages();
+    subscribe();
   }
 
-  async function fetchRelated(current: any) {
+  async function loadMessages() {
     const { data } = await supabase
-      .from("listings")
+      .from("messages")
       .select("*")
-      .eq("location", current.location)
-      .neq("id", current.id)
-      .limit(3);
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
 
-    setRelated(data || []);
+    setMessages(data || []);
   }
 
-  async function trackView() {
-    try {
-      await supabase.rpc("increment_views", { row_id: id });
-    } catch {}
+  function subscribe() {
+    const channel = supabase
+      .channel(`chat-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          setMessages((prev) => [...prev, payload.new]);
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-white bg-[#050816]">
-        Loading...
-      </div>
-    );
+  async function sendMessage() {
+    if (!user || !input.trim()) return;
+
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      message: input,
+      created_at: new Date().toISOString(),
+    });
+
+    setInput("");
   }
 
-  if (!listing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-white bg-[#050816]">
-        Listing not found
-      </div>
-    );
+  async function sendOffer() {
+    const amount = prompt("Offer amount?");
+    if (!amount || !user) return;
+
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      message: `💰 Offer: $${amount}`,
+      offer_amount: Number(amount),
+      offer_status: "pending",
+      created_at: new Date().toISOString(),
+    });
   }
 
-  const boosted = isBoostActive(listing);
+  async function acceptOffer(msg: any) {
+    if (!conversation) return;
+
+    await createDeal({
+      listingId: conversation.listing_id,
+      conversationId: conversation.id,
+      buyerId: conversation.buyer_id,
+      ownerId: conversation.owner_id,
+      amount: msg.offer_amount,
+    });
+
+    await supabase
+      .from("messages")
+      .update({ offer_status: "accepted" })
+      .eq("id", msg.id);
+  }
 
   return (
-    <main className="min-h-screen bg-[#050816] text-white px-6 py-12">
+    <main className="flex flex-col min-h-screen bg-[#050816] text-white">
 
-      <div className="max-w-7xl mx-auto grid lg:grid-cols-3 gap-10">
-
-        {/* =========================
-           LEFT MAIN
-        ========================= */}
-        <div className="lg:col-span-2 space-y-8">
-
-          {/* HERO IMAGE */}
-          <div className="relative h-[420px] rounded-2xl overflow-hidden border border-white/10 bg-black">
-
-            {boosted && (
-              <div className="absolute top-4 left-4 z-10 bg-yellow-400 text-black px-3 py-1 text-xs font-bold rounded-full">
-                BOOSTED
-              </div>
-            )}
-
-            {listing.image ? (
-              <img
-                src={listing.image}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="h-full flex items-center justify-center text-white/30">
-                No Image
-              </div>
-            )}
-
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-          </div>
-
-          {/* TITLE BLOCK */}
-          <div>
-            <h1 className="text-3xl font-semibold">
-              {listing.title}
-            </h1>
-
-            <p className="text-white/50 mt-2">
-              📍 {listing.location}
-            </p>
-
-            <div className="flex justify-between mt-5 items-center">
-              <p className="text-blue-400 text-2xl font-bold">
-                {listing.price}
-              </p>
-
-              <p className="text-white/40 text-sm">
-                👁 {listing.views || 0} views
-              </p>
-            </div>
-          </div>
-
-          {/* DESCRIPTION */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-            <h3 className="font-semibold mb-3">Description</h3>
-            <p className="text-white/60 text-sm leading-relaxed">
-              {listing.description || "No description provided."}
-            </p>
-          </div>
-
-          {/* METRICS */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-            <h3 className="font-semibold mb-4">Performance Data</h3>
-
-            <div className="grid grid-cols-2 gap-3 text-sm text-white/60">
-
-              <p>👥 Followers: {listing.followers || 0}</p>
-              <p>👁 Avg Views: {listing.average_views || 0}</p>
-              <p>🔥 Engagement: {listing.engagement_rate || 0}%</p>
-              <p>🌍 Audience: {listing.audience_country || "N/A"}</p>
-
-              {listing.daily_traffic && (
-                <p>🚦 Traffic: {listing.daily_traffic}</p>
-              )}
-
-              {listing.dimensions && (
-                <p>📐 Size: {listing.dimensions}</p>
-              )}
-
-              <p>🏷 Type: {listing.type}</p>
-            </div>
-          </div>
-
-          {/* ACTIONS */}
-          <div className="flex gap-3">
-            <button className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl">
-              Book Space
-            </button>
-
-            <button className="px-6 py-3 border border-white/15 rounded-xl">
-              Save
-            </button>
-          </div>
-        </div>
-
-        {/* =========================
-           RIGHT SIDEBAR (SYSTEM PANEL)
-        ========================= */}
-        <div className="space-y-6">
-
-          {/* OWNER */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-            <h3 className="font-semibold mb-2">Owner</h3>
-            <p className="text-white/50 text-sm break-all">
-              {listing.user_id || "Unknown"}
-            </p>
-          </div>
-
-          {/* BOOST STATUS */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-            <h3 className="font-semibold mb-2">Boost Status</h3>
-
-            {boosted ? (
-              <p className="text-yellow-400 text-sm">
-                Active Boost
-              </p>
-            ) : (
-              <p className="text-white/40 text-sm">
-                No active boost
-              </p>
-            )}
-          </div>
-
-          {/* QUICK INFO */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-2 text-sm text-white/60">
-
-            <p>📍 {listing.location}</p>
-            <p>💰 {listing.price}</p>
-            <p>👁 {listing.views || 0} views</p>
-            <p>🏷 {listing.type}</p>
-
-          </div>
-
-        </div>
+      {/* HEADER */}
+      <div className="p-4 border-b border-white/10">
+        <h1 className="font-bold">Chat</h1>
       </div>
 
-      {/* =========================
-         RELATED
-      ========================= */}
-      {related.length > 0 && (
-        <div className="max-w-7xl mx-auto mt-16">
-          <h2 className="text-xl font-semibold mb-6">
-            Related Listings
-          </h2>
+      {/* MESSAGES */}
+      <div className="flex-1 p-4 space-y-3 overflow-y-auto">
 
-          <div className="grid md:grid-cols-3 gap-6">
+        {messages.map((msg) => {
+          const isMine = msg.sender_id === user?.id;
 
-            {related.map((item) => (
-              <Link key={item.id} href={`/marketplace/${item.id}`}>
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition">
-                  <h3 className="font-medium">{item.title}</h3>
-                  <p className="text-white/40 text-sm">
-                    {item.location}
+          return (
+            <div
+              key={msg.id}
+              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+            >
+              <div className="max-w-[70%] p-3 rounded-xl bg-white/10">
+
+                <p>{msg.message}</p>
+
+                {msg.offer_amount && (
+                  <p className="text-yellow-400 text-sm mt-1">
+                    Offer: ${msg.offer_amount}
                   </p>
-                  <p className="text-blue-400 mt-2">
-                    {item.price}
-                  </p>
-                </div>
-              </Link>
-            ))}
+                )}
 
-          </div>
-        </div>
-      )}
+                {msg.offer_status === "pending" &&
+                  !isMine && (
+                    <button
+                      onClick={() => acceptOffer(msg)}
+                      className="mt-2 px-3 py-1 bg-green-600 rounded"
+                    >
+                      Accept Offer
+                    </button>
+                  )}
+
+              </div>
+            </div>
+          );
+        })}
+
+        <div ref={bottomRef} />
+      </div>
+
+      {/* INPUT */}
+      <div className="p-3 flex gap-2 border-t border-white/10">
+
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="flex-1 px-3 py-2 rounded bg-white/5"
+          placeholder="Message..."
+        />
+
+        <button onClick={sendOffer} className="px-3 bg-green-600 rounded">
+          💰
+        </button>
+
+        <button onClick={sendMessage} className="px-3 bg-blue-600 rounded">
+          Send
+        </button>
+
+      </div>
 
     </main>
   );

@@ -17,15 +17,25 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 min-h-screen bg-white/5 border-r border-white/10 p-5">
+    <aside className="h-screen w-64 bg-[#050816] border-r border-white/10 flex flex-col">
 
-      {/* BRAND */}
-      <h1 className="text-xl font-bold text-blue-400 mb-8">
-        AdSphere
-      </h1>
+      {/* =========================
+         BRAND
+      ========================= */}
+      <div className="px-5 py-6 border-b border-white/10">
+        <h1 className="text-lg font-semibold text-blue-400 tracking-wide">
+          AdSphere
+        </h1>
 
-      {/* NAV */}
-      <nav className="space-y-2 text-sm">
+        <p className="text-xs text-white/30 mt-1">
+          Visibility OS
+        </p>
+      </div>
+
+      {/* =========================
+         NAVIGATION
+      ========================= */}
+      <nav className="flex-1 px-3 py-5 space-y-1">
 
         {links.map((link) => {
           const active = pathname === link.href;
@@ -35,10 +45,10 @@ export default function Sidebar() {
               key={link.href}
               href={link.href}
               className={`
-                block px-3 py-2 rounded-lg transition
+                flex items-center px-3 py-2 rounded-lg text-sm transition
                 ${
                   active
-                    ? "bg-blue-600 text-white"
+                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
                     : "text-white/60 hover:text-white hover:bg-white/5"
                 }
               `}
@@ -47,8 +57,14 @@ export default function Sidebar() {
             </Link>
           );
         })}
-
       </nav>
+
+      {/* =========================
+         FOOTER SECTION
+      ========================= */}
+      <div className="px-5 py-4 border-t border-white/10 text-xs text-white/30">
+        © {new Date().getFullYear()} AdSphere
+      </div>
 
     </aside>
   );

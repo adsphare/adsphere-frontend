@@ -1,0 +1,96 @@
+/* =========================
+   ADSPhere Design System V2
+   Stripe-inspired SaaS UI
+========================= */
+
+:root {
+  /* CORE BACKGROUND */
+  --bg: #050816;
+  --panel: rgba(255, 255, 255, 0.05);
+  --panel-hover: rgba(255, 255, 255, 0.08);
+
+  /* TEXT */
+  --text: #ffffff;
+  --muted: rgba(255, 255, 255, 0.6);
+
+  /* BRAND */
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+
+  /* STATUS */
+  --success: #22c55e;
+  --warning: #facc15;
+  --danger: #ef4444;
+
+  /* BORDER */
+  --border: rgba(255, 255, 255, 0.1);
+
+  /* RADIUS */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+
+  /* SHADOWS */
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.25);
+}
+
+/* =========================
+   BASE
+========================= */
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system;
+}
+
+/* =========================
+   CARD SYSTEM
+========================= */
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: 0.25s ease;
+}
+
+.card:hover {
+  background: var(--panel-hover);
+  transform: translateY(-2px);
+}
+
+/* =========================
+   BUTTON SYSTEM
+========================= */
+
+.btn {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  transition: 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-glow);
+}
+
+/* =========================
+   GLASS EFFECT
+========================= */
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}

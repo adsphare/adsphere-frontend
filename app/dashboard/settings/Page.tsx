@@ -1,99 +1,78 @@
-export default function AboutPage() {
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+export default function SettingsPage() {
+  const [loading, setLoading] = useState(true);
+  const [basic, setBasic] = useState("5");
+  const [premium, setPremium] = useState("10");
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function load() {
+    const { data } = await supabase.from("settings").select("*");
+
+    data?.forEach((s) => {
+      if (s.key === "boost_basic") setBasic(s.value);
+      if (s.key === "boost_premium") setPremium(s.value);
+    });
+
+    setLoading(false);
+  }
+
+  async function save() {
+    await supabase.from("settings").upsert([
+      { key: "boost_basic", value: basic },
+      { key: "boost_premium", value: premium },
+    ]);
+
+    alert("Settings saved");
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050816] text-white flex items-center justify-center">
+        Loading settings...
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-[#050816] text-white px-6 py-16">
+    <main className="min-h-screen bg-[#050816] text-white p-8 space-y-6">
 
-      <div className="max-w-5xl mx-auto">
+      <h1 className="text-3xl font-bold">Settings ⚙️</h1>
 
-        {/* HERO */}
-        <h1 className="text-4xl font-bold">
-          About AdSphere
-        </h1>
+      <div className="max-w-md space-y-4">
 
-        <p className="text-white/60 mt-3 text-lg">
-          The next-generation marketplace for advertising space,
-          creators, and digital visibility.
-        </p>
+        <div>
+          <label className="text-white/60 text-sm">Basic Boost Price</label>
+          <input
+            value={basic}
+            onChange={(e) => setBasic(e.target.value)}
+            className="w-full p-3 bg-white/5 border border-white/10 rounded mt-1"
+          />
+        </div>
 
-        {/* DIVIDER */}
-        <div className="h-px bg-white/10 my-10" />
+        <div>
+          <label className="text-white/60 text-sm">Premium Boost Price</label>
+          <input
+            value={premium}
+            onChange={(e) => setPremium(e.target.value)}
+            className="w-full p-3 bg-white/5 border border-white/10 rounded mt-1"
+          />
+        </div>
 
-        {/* WHAT IT IS */}
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">
-            What is AdSphere?
-          </h2>
-
-          <p className="text-white/60 leading-relaxed">
-            AdSphere is a unified advertising marketplace where businesses,
-            creators, and space owners can buy and sell visibility.
-            From social media creators to billboards and digital screens —
-            everything becomes a tradable “attention space”.
-          </p>
-        </section>
-
-        {/* HOW IT WORKS */}
-        <section className="mt-10 space-y-4">
-          <h2 className="text-2xl font-semibold">
-            How it works
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-4 mt-4">
-
-            <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-              <h3 className="font-semibold">1. List Space</h3>
-              <p className="text-white/50 text-sm mt-2">
-                Users publish advertising space (social, billboard, digital).
-              </p>
-            </div>
-
-            <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-              <h3 className="font-semibold">2. Discover</h3>
-              <p className="text-white/50 text-sm mt-2">
-                Buyers explore listings with filters and AI recommendations.
-              </p>
-            </div>
-
-            <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-              <h3 className="font-semibold">3. Boost & Pay</h3>
-              <p className="text-white/50 text-sm mt-2">
-                Listings can be boosted for higher visibility using payments.
-              </p>
-            </div>
-
-          </div>
-        </section>
-
-        {/* VISION */}
-        <section className="mt-12 space-y-4">
-          <h2 className="text-2xl font-semibold">
-            Vision
-          </h2>
-
-          <p className="text-white/60 leading-relaxed">
-            We are building the world’s first “attention exchange layer”
-            where visibility becomes programmable, measurable, and tradable —
-            like real estate, but for attention.
-          </p>
-        </section>
-
-        {/* TRUST BLOCK */}
-        <section className="mt-12 p-6 bg-white/5 border border-white/10 rounded-xl">
-
-          <h2 className="text-xl font-semibold">
-            Why AdSphere matters
-          </h2>
-
-          <ul className="mt-4 space-y-2 text-white/60 text-sm">
-            <li>✔ Transparent advertising marketplace</li>
-            <li>✔ Direct access between buyers and creators</li>
-            <li>✔ AI-powered visibility insights (coming soon)</li>
-            <li>✔ Boost-based monetization system</li>
-          </ul>
-
-        </section>
+        <button
+          onClick={save}
+          className="w-full bg-blue-600 p-3 rounded hover:bg-blue-500"
+        >
+          Save Settings
+        </button>
 
       </div>
-
     </main>
   );
 }

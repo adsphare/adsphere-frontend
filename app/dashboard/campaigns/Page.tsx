@@ -14,9 +14,10 @@ export default function CampaignsPage() {
   const [form, setForm] = useState({
     listing_id: "",
     title: "",
-    budget: ""
+    budget: "",
   });
 
+  // INIT
   useEffect(() => {
     init();
   }, []);
@@ -36,15 +37,17 @@ export default function CampaignsPage() {
     await fetchCampaigns(user.id);
   }
 
+  // FETCH LISTINGS
   async function fetchListings(userId: string) {
     const { data } = await supabase
       .from("listings")
-      .select("id, title")
+      .select("id, title, boost_score")
       .eq("user_id", userId);
 
     setListings(data || []);
   }
 
+  // FETCH CAMPAIGNS
   async function fetchCampaigns(userId: string) {
     setLoading(true);
 
@@ -64,18 +67,22 @@ export default function CampaignsPage() {
     setLoading(false);
   }
 
+  // CREATE CAMPAIGN + BOOST CONNECTION
   async function createCampaign() {
     if (!form.listing_id || !form.title || !form.budget) {
       alert("Fill all fields");
       return;
     }
 
+    const budget = Number(form.budget);
+
+    // 1. Create campaign
     const { error } = await supabase.from("campaigns").insert({
       user_id: userId,
       listing_id: form.listing_id,
       title: form.title,
-      budget: Number(form.budget),
-      status: "active"
+      budget,
+      status: "active",
     });
 
     if (error) {
@@ -83,17 +90,44 @@ export default function CampaignsPage() {
       return;
     }
 
+    // 2. BOOST LISTING (REAL SYSTEM)
+    const { data } = await supabase
+      .from("listings")
+      .select("boost_score")
+      .eq("id", form.listing_id)
+      .single();
+
+    const currentBoost = data?.boost_score || 0;
+
+    await supabase
+      .from("listings")
+      .update({
+        boost_score: currentBoost + budget * 2,
+      })
+      .eq("id", form.listing_id);
+
     setForm({ listing_id: "", title: "", budget: "" });
+
     await fetchCampaigns(userId!);
+    await fetchListings(userId!);
+
+    alert("Campaign created + listing boosted 🚀");
   }
 
+  // BOOST BUTTON (FIXED)
   async function boostListing(listingId: string) {
+    const { data } = await supabase
+      .from("listings")
+      .select("boost_score")
+      .eq("id", listingId)
+      .single();
+
+    const current = data?.boost_score || 0;
+
     const { error } = await supabase
       .from("listings")
       .update({
-        is_boosted: true,
-        boost_level: 1,
-        boost_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        boost_score: current + 30,
       })
       .eq("id", listingId);
 
@@ -105,6 +139,7 @@ export default function CampaignsPage() {
     alert("Listing boosted 🚀");
   }
 
+  // LOADING STATE
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-white bg-[#050816]">
@@ -115,15 +150,12 @@ export default function CampaignsPage() {
 
   return (
     <main className="min-h-screen bg-[#050816] text-white px-6 py-10">
-
       <div className="max-w-6xl mx-auto">
 
         {/* HEADER */}
         <div className="flex justify-between items-center mb-10">
           <div>
-            <h1 className="text-3xl font-bold">
-              Campaigns
-            </h1>
+            <h1 className="text-3xl font-bold">Campaigns</h1>
             <p className="text-gray-400 text-sm">
               Manage and boost your ads
             </p>
@@ -178,7 +210,6 @@ export default function CampaignsPage() {
               }
               className="p-2 bg-black border border-white/10 rounded"
             />
-
           </div>
 
           <button
@@ -192,9 +223,7 @@ export default function CampaignsPage() {
         {/* CAMPAIGNS LIST */}
         <div className="space-y-4">
           {campaigns.length === 0 && (
-            <p className="text-gray-400">
-              No campaigns yet
-            </p>
+            <p className="text-gray-400">No campaigns yet</p>
           )}
 
           {campaigns.map((c) => (
@@ -204,9 +233,7 @@ export default function CampaignsPage() {
             >
               <div className="flex justify-between">
                 <div>
-                  <h3 className="font-bold">
-                    {c.title}
-                  </h3>
+                  <h3 className="font-bold">{c.title}</h3>
                   <p className="text-gray-400 text-sm">
                     Budget: ${c.budget}
                   </p>
@@ -234,6 +261,10 @@ export default function CampaignsPage() {
                 className="p-4 border border-white/10 rounded-lg bg-white/5"
               >
                 <h3>{l.title}</h3>
+
+                <p className="text-xs text-white/40">
+                  Boost score: {l.boost_score || 0}
+                </p>
 
                 <button
                   onClick={() => boostListing(l.id)}
