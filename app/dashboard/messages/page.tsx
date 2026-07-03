@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+
+const supabase = createBrowserSupabase(); // ✅ FIX
 
 export default function MessagesPage() {
   const [messages, setMessages] = useState<any[]>([]);
@@ -12,43 +14,45 @@ export default function MessagesPage() {
   }, []);
 
   async function loadMessages() {
-    const { data: authData } = await supabase.auth.getUser();
+    const { data: authData, error: authError } =
+      await supabase.auth.getUser();
 
-    if (!authData?.user) {
+    if (authError || !authData?.user) {
       setLoading(false);
       return;
     }
 
+    const userId = authData.user.id;
+
     const { data, error } = await supabase
       .from("chats")
       .select("*")
-      .or(
-        `sender_id.eq.${authData.user.id},receiver_id.eq.${authData.user.id}`
-      )
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
       .order("created_at", { ascending: false });
 
-    if (!error) {
-      setMessages(data || []);
+    if (error) {
+      console.error("Messages error:", error);
+      setLoading(false);
+      return;
     }
 
+    setMessages(data || []);
     setLoading(false);
   }
 
   if (loading) {
     return (
-      <div className="text-white">
+      <div className="min-h-screen flex items-center justify-center text-white bg-[#050816]">
         Loading messages...
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 text-white">
-      <div>
-        <h1 className="text-3xl font-bold">
-          Messages
-        </h1>
+    <div className="min-h-screen bg-[#050816] text-white p-6 space-y-6">
 
+      <div>
+        <h1 className="text-3xl font-bold">Messages</h1>
         <p className="text-white/50 mt-2">
           Conversations from listings and bookings
         </p>
@@ -65,18 +69,14 @@ export default function MessagesPage() {
               key={msg.id}
               className="bg-white/5 border border-white/10 rounded-xl p-4"
             >
-              <p className="text-white">
-                {msg.message}
-              </p>
+              <p>{msg.message}</p>
 
               <div className="mt-3 text-xs text-white/40">
                 Listing: {msg.listing_id}
               </div>
 
               <div className="text-xs text-white/40">
-                {new Date(
-                  msg.created_at
-                ).toLocaleString()}
+                {new Date(msg.created_at).toLocaleString()}
               </div>
             </div>
           ))}

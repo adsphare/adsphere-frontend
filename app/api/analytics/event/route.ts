@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
+const supabase = createServerSupabase();
 
   const { listingId, type } = await req.json();
 
@@ -10,13 +11,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid event" }, { status: 400 });
   }
 
-  // 1. log event (optional but powerful)
-  await supabase.from("boost_events").insert({
-    listing_id: listingId,
-    event_type: type,
-  });
+  // 1. log event
+  const { error: logError } = await supabase
+    .from("boost_events")
+    .insert({
+      listing_id: listingId,
+      event_type: type,
+    });
 
-  // 2. update aggregated stats
+  if (logError) {
+    console.error("Boost event log error:", logError.message);
+  }
+
+  // 2. map event → column
   const column =
     type === "click"
       ? "clicks"
@@ -27,13 +34,29 @@ export async function POST(req: Request) {
       : null;
 
   if (!column) {
-    return NextResponse.json({ error: "Unknown event" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Unknown event" },
+      { status: 400 }
+    );
   }
 
-  await supabase.rpc("increment_boost_metric", {
-    row_id: listingId,
-    column_name: column,
-  });
+  // 3. update stats safely
+  const { error: rpcError } = await supabase.rpc(
+    "increment_boost_metric",
+    {
+      row_id: listingId,
+      column_name: column,
+    }
+  );
+
+  if (rpcError) {
+    console.error("RPC error:", rpcError.message);
+  }
 
   return NextResponse.json({ success: true });
 }
+
+
+
+
+

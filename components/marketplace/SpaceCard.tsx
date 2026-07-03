@@ -34,3 +34,8 @@ export default function SpaceCard({ space }: Props) {
     </div>
   );
 }
+
+
+
+
+

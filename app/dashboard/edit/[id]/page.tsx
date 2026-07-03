@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 import Button from "@/components/ui/Button";
-import { getUser } from "@/lib/auth";
 
 export default function EditListingPage() {
   const params = useParams();
   const router = useRouter();
+  const supabase = createBrowserSupabase();
 
-  const id = Array.isArray(params?.id)
-    ? params.id[0]
-    : params?.id;
+  const id =
+    typeof params?.id === "string"
+      ? params.id
+      : Array.isArray(params?.id)
+      ? params.id[0]
+      : null;
 
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -25,13 +28,14 @@ export default function EditListingPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ---------------- INIT ----------------
   useEffect(() => {
+    if (!id) return;
     init();
-  }, []);
+  }, [id]);
 
   async function init() {
-    const { user } = await getUser();
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
 
     if (!user) {
       router.replace("/auth/login");
@@ -47,7 +51,6 @@ export default function EditListingPage() {
     await fetchListing(user.id, id);
   }
 
-  // ---------------- FETCH ----------------
   async function fetchListing(uid: string, listingId: string) {
     setLoading(true);
     setError(null);
@@ -75,7 +78,6 @@ export default function EditListingPage() {
     setLoading(false);
   }
 
-  // ---------------- UPDATE ----------------
   async function handleUpdate() {
     if (!id) return;
 
@@ -108,7 +110,6 @@ export default function EditListingPage() {
     router.replace("/dashboard");
   }
 
-  // ---------------- LOADING ----------------
   if (loading) {
     return (
       <main className="min-h-screen bg-[#050816] text-white flex items-center justify-center">
@@ -119,10 +120,8 @@ export default function EditListingPage() {
     );
   }
 
-  // ---------------- UI ----------------
   return (
     <main className="min-h-screen bg-[#050816] text-white">
-
       <section className="max-w-2xl mx-auto px-6 py-10">
 
         <h1 className="text-3xl font-bold mb-6">
@@ -138,8 +137,6 @@ export default function EditListingPage() {
         <div className="space-y-4">
 
           <input
-            id="title"
-            name="title"
             className="w-full p-3 rounded bg-white/5 border border-white/10"
             placeholder="Title"
             value={title}
@@ -147,8 +144,6 @@ export default function EditListingPage() {
           />
 
           <input
-            id="location"
-            name="location"
             className="w-full p-3 rounded bg-white/5 border border-white/10"
             placeholder="Location"
             value={location}
@@ -156,8 +151,6 @@ export default function EditListingPage() {
           />
 
           <input
-            id="image"
-            name="image"
             className="w-full p-3 rounded bg-white/5 border border-white/10"
             placeholder="Image URL"
             value={image}
@@ -165,8 +158,6 @@ export default function EditListingPage() {
           />
 
           <input
-            id="price"
-            name="price"
             className="w-full p-3 rounded bg-white/5 border border-white/10"
             placeholder="Price"
             value={price}
@@ -174,8 +165,6 @@ export default function EditListingPage() {
           />
 
           <select
-            id="type"
-            name="type"
             className="w-full p-3 rounded bg-white/5 border border-white/10"
             value={type}
             onChange={(e) => setType(e.target.value)}
@@ -186,8 +175,6 @@ export default function EditListingPage() {
           </select>
 
           <textarea
-            id="description"
-            name="description"
             className="w-full p-3 rounded bg-white/5 border border-white/10"
             placeholder="Description"
             value={description}
@@ -199,7 +186,6 @@ export default function EditListingPage() {
           </Button>
 
         </div>
-
       </section>
     </main>
   );

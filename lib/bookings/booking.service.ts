@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export type BookingStatus =
   | "pending"
@@ -21,7 +21,7 @@ export const bookingService = {
      CREATE BOOKING
   ========================= */
   async create(input: CreateBookingInput) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
     const { data, error } = await supabase
       .from("bookings")
@@ -44,7 +44,7 @@ export const bookingService = {
      CONFIRM BOOKING
   ========================= */
   async confirm(bookingId: string) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
     const { data, error } = await supabase
       .from("bookings")
@@ -65,11 +65,8 @@ export const bookingService = {
   /* =========================
      SUBMIT DELIVERY
   ========================= */
-  async submitDelivery(
-    bookingId: string,
-    contentUrl: string
-  ) {
-    const supabase = await createClient();
+  async submitDelivery(bookingId: string, contentUrl: string) {
+    const supabase = createServerSupabase();
 
     const { data, error } = await supabase
       .from("bookings")
@@ -92,7 +89,7 @@ export const bookingService = {
      APPROVE DELIVERY
   ========================= */
   async approve(bookingId: string) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
     const { data, error } = await supabase
       .from("bookings")
@@ -114,7 +111,7 @@ export const bookingService = {
      REJECT DELIVERY
   ========================= */
   async reject(bookingId: string, reason?: string) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
     const { data, error } = await supabase
       .from("bookings")
@@ -133,3 +130,8 @@ export const bookingService = {
     return data;
   },
 };
+
+
+
+
+

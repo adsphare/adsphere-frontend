@@ -10,15 +10,23 @@ import {
   useSpring,
   useMotionValue,
 } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function HomePage() {
+  /* =========================
+     SAFE CLIENT MOUNT FLAG
+  ========================= */
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   /* =========================
      SCROLL MAGNET ENGINE
   ========================= */
   const { scrollY } = useScroll();
 
-  // stronger “pull into sections”
   const magnet1 = useTransform(scrollY, [0, 600], [0, -80]);
   const magnet2 = useTransform(scrollY, [0, 600], [0, -40]);
   const magnet3 = useTransform(scrollY, [0, 600], [0, 60]);
@@ -34,6 +42,8 @@ export default function HomePage() {
   const mouseY = useMotionValue(0);
 
   useEffect(() => {
+    if (!mounted) return;
+
     const move = (e: MouseEvent) => {
       mouseX.set((e.clientX - window.innerWidth / 2) * 0.03);
       mouseY.set((e.clientY - window.innerHeight / 2) * 0.03);
@@ -41,27 +51,25 @@ export default function HomePage() {
 
     window.addEventListener("mousemove", move);
     return () => window.removeEventListener("mousemove", move);
-  }, []);
+  }, [mounted]);
+
+  /* =========================
+     SAFE RENDER GUARD
+  ========================= */
+  if (!mounted) return null;
 
   return (
     <main className="relative min-h-screen bg-[#050816] text-white overflow-hidden scroll-smooth">
 
-      {/* =========================
-         GLOW FIELD (MAGNET BACKDROP)
-      ========================= */}
+      {/* GLOW FIELD */}
       <motion.div
         style={{ x: mouseX, y: mouseY }}
         className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
         w-[900px] h-[900px] bg-blue-500/20 blur-[160px] rounded-full"
       />
 
-      {/* =========================
-         HERO (MAGNET ZONE 1)
-      ========================= */}
-      <motion.section
-        style={{ y: smooth1 }}
-        className="relative z-10 pt-16 text-center"
-      >
+      {/* HERO */}
+      <motion.section style={{ y: smooth1 }} className="relative z-10 pt-16 text-center">
         <Hero />
 
         <div className="mt-10 max-w-6xl mx-auto px-6">
@@ -76,23 +84,13 @@ export default function HomePage() {
         </div>
       </motion.section>
 
-      {/* =========================
-         TRUST STRIP (MAGNET ZONE 2)
-      ========================= */}
-      <motion.section
-        style={{ y: smooth2 }}
-        className="text-center py-12 text-white/40 tracking-[0.3em]"
-      >
+      {/* TRUST */}
+      <motion.section style={{ y: smooth2 }} className="text-center py-12 text-white/40 tracking-[0.3em]">
         VISIBILITY • AI RANKING • REAL WORLD ADS
       </motion.section>
 
-      {/* =========================
-         METRICS (FLOAT MAGNET CARDS)
-      ========================= */}
-      <motion.section
-        style={{ y: smooth2 }}
-        className="max-w-6xl mx-auto px-6 py-20 grid grid-cols-2 md:grid-cols-4 gap-6"
-      >
+      {/* METRICS */}
+      <motion.section style={{ y: smooth2 }} className="max-w-6xl mx-auto px-6 py-20 grid grid-cols-2 md:grid-cols-4 gap-6">
         {[
           ["1K+", "Listings"],
           ["300+", "Advertisers"],
@@ -110,13 +108,8 @@ export default function HomePage() {
         ))}
       </motion.section>
 
-      {/* =========================
-         MARKETPLACE (MAGNET PULL)
-      ========================= */}
-      <motion.section
-        style={{ y: smooth2 }}
-        className="max-w-6xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-14 items-center"
-      >
+      {/* MARKETPLACE */}
+      <motion.section style={{ y: smooth2 }} className="max-w-6xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-14 items-center">
         <div>
           <h2 className="text-4xl font-semibold">
             Spatial <span className="text-blue-400">Marketplace</span>
@@ -126,10 +119,7 @@ export default function HomePage() {
             Listings behave like magnetic objects in attention space.
           </p>
 
-          <Link
-            href="/marketplace"
-            className="inline-block mt-6 px-6 py-3 bg-blue-600 rounded-xl"
-          >
+          <Link href="/marketplace" className="inline-block mt-6 px-6 py-3 bg-blue-600 rounded-xl">
             Enter Space
           </Link>
         </div>
@@ -147,13 +137,8 @@ export default function HomePage() {
         </motion.div>
       </motion.section>
 
-      {/* =========================
-         DASHBOARD
-      ========================= */}
-      <motion.section
-        style={{ y: smooth2 }}
-        className="max-w-6xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-14 items-center"
-      >
+      {/* DASHBOARD */}
+      <motion.section style={{ y: smooth2 }} className="max-w-6xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-14 items-center">
         <motion.div
           whileHover={{ scale: 1.05, rotateY: -6 }}
           className="relative h-[380px] rounded-[32px] overflow-hidden border border-white/10"
@@ -175,22 +160,14 @@ export default function HomePage() {
             Manage campaigns inside a magnetic control system.
           </p>
 
-          <Link
-            href="/dashboard"
-            className="inline-block mt-6 px-6 py-3 border border-white/15 rounded-xl"
-          >
+          <Link href="/dashboard" className="inline-block mt-6 px-6 py-3 border border-white/15 rounded-xl">
             Open Panel
           </Link>
         </div>
       </motion.section>
 
-      {/* =========================
-         ABOUT (FLOAT ZONE)
-      ========================= */}
-      <motion.section
-        style={{ y: smooth3 }}
-        className="text-center max-w-6xl mx-auto px-6 py-28"
-      >
+      {/* ABOUT */}
+      <motion.section style={{ y: smooth3 }} className="text-center max-w-6xl mx-auto px-6 py-28">
         <h2 className="text-4xl font-semibold">
           Built for the <span className="text-blue-400">Immersive Web</span>
         </h2>
@@ -209,9 +186,7 @@ export default function HomePage() {
         </div>
       </motion.section>
 
-      {/* =========================
-         CTA
-      ========================= */}
+      {/* CTA */}
       <section className="text-center py-32">
         <h2 className="text-5xl font-semibold">
           Enter the <span className="text-blue-400">Magnetic Layer</span>
@@ -222,17 +197,11 @@ export default function HomePage() {
         </p>
 
         <div className="mt-10 flex gap-4 justify-center">
-          <Link
-            href="/list-space"
-            className="px-7 py-3 bg-white text-black rounded-xl"
-          >
+          <Link href="/list-space" className="px-7 py-3 bg-white text-black rounded-xl">
             Start
           </Link>
 
-          <Link
-            href="/marketplace"
-            className="px-7 py-3 border border-white/15 rounded-xl"
-          >
+          <Link href="/marketplace" className="px-7 py-3 border border-white/15 rounded-xl">
             Explore
           </Link>
         </div>
@@ -242,6 +211,12 @@ export default function HomePage() {
       <footer className="py-10 text-center text-white/30 text-sm border-t border-white/5">
         © {new Date().getFullYear()} Adsphere
       </footer>
+
     </main>
   );
 }
+
+
+
+
+

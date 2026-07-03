@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 import Link from "next/link";
+
+const supabase = createBrowserSupabase();
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -17,7 +19,6 @@ export default function CampaignsPage() {
     budget: "",
   });
 
-  // INIT
   useEffect(() => {
     init();
   }, []);
@@ -35,9 +36,10 @@ export default function CampaignsPage() {
 
     await fetchListings(user.id);
     await fetchCampaigns(user.id);
+
+    setLoading(false);
   }
 
-  // FETCH LISTINGS
   async function fetchListings(userId: string) {
     const { data } = await supabase
       .from("listings")
@@ -47,27 +49,16 @@ export default function CampaignsPage() {
     setListings(data || []);
   }
 
-  // FETCH CAMPAIGNS
   async function fetchCampaigns(userId: string) {
-    setLoading(true);
-
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("campaigns")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.log(error);
-      setLoading(false);
-      return;
-    }
-
     setCampaigns(data || []);
-    setLoading(false);
   }
 
-  // CREATE CAMPAIGN + BOOST CONNECTION
   async function createCampaign() {
     if (!form.listing_id || !form.title || !form.budget) {
       alert("Fill all fields");
@@ -76,7 +67,6 @@ export default function CampaignsPage() {
 
     const budget = Number(form.budget);
 
-    // 1. Create campaign
     const { error } = await supabase.from("campaigns").insert({
       user_id: userId,
       listing_id: form.listing_id,
@@ -90,7 +80,6 @@ export default function CampaignsPage() {
       return;
     }
 
-    // 2. BOOST LISTING (REAL SYSTEM)
     const { data } = await supabase
       .from("listings")
       .select("boost_score")
@@ -114,7 +103,6 @@ export default function CampaignsPage() {
     alert("Campaign created + listing boosted 🚀");
   }
 
-  // BOOST BUTTON (FIXED)
   async function boostListing(listingId: string) {
     const { data } = await supabase
       .from("listings")
@@ -139,7 +127,6 @@ export default function CampaignsPage() {
     alert("Listing boosted 🚀");
   }
 
-  // LOADING STATE
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-white bg-[#050816]">
@@ -150,9 +137,9 @@ export default function CampaignsPage() {
 
   return (
     <main className="min-h-screen bg-[#050816] text-white px-6 py-10">
+
       <div className="max-w-6xl mx-auto">
 
-        {/* HEADER */}
         <div className="flex justify-between items-center mb-10">
           <div>
             <h1 className="text-3xl font-bold">Campaigns</h1>
@@ -169,14 +156,12 @@ export default function CampaignsPage() {
           </Link>
         </div>
 
-        {/* CREATE CAMPAIGN */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-10">
           <h2 className="text-lg font-semibold mb-4">
             Create Campaign
           </h2>
 
           <div className="grid md:grid-cols-3 gap-4">
-
             <select
               value={form.listing_id}
               onChange={(e) =>
@@ -220,7 +205,6 @@ export default function CampaignsPage() {
           </button>
         </div>
 
-        {/* CAMPAIGNS LIST */}
         <div className="space-y-4">
           {campaigns.length === 0 && (
             <p className="text-gray-400">No campaigns yet</p>
@@ -247,14 +231,12 @@ export default function CampaignsPage() {
           ))}
         </div>
 
-        {/* BOOST SECTION */}
         <div className="mt-10">
           <h2 className="text-lg font-semibold mb-4">
             Quick Boost Listings
           </h2>
 
           <div className="grid md:grid-cols-3 gap-4">
-
             {listings.map((l) => (
               <div
                 key={l.id}
@@ -274,11 +256,11 @@ export default function CampaignsPage() {
                 </button>
               </div>
             ))}
-
           </div>
         </div>
 
       </div>
+
     </main>
   );
 }

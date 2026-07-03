@@ -1,42 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Card from "@/components/card";
-import { updateRank } from "@/lib/ranking/updateRank";
+import { listingRank } from "@/lib/core/ranking/listingRank";
+import { trustScore } from "@/lib/core/trust/trustScore";
 
-/* =========================
-   TYPES
-========================= */
 type Listing = {
   id: string;
   title: string;
   location: string;
-  type?: string;
-  price?: string;
-  image?: string;
-  rank_score?: number;
+  created_at: string;
+  owner_id: string;
+  views?: number;
+  likes?: number;
+  rank?: number;
 };
 
-/* =========================
-   PAGE
-========================= */
 export default function MarketplacePage() {
   const router = useRouter();
-
   const [listings, setListings] = useState<Listing[]>([]);
+  const [trustMap, setTrustMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
-  const [filters, setFilters] = useState({
-    search: "",
-    type: "all",
-    location: "",
-  });
-
-  /* =========================
-     LOAD DATA
-  ========================= */
   useEffect(() => {
     load();
   }, []);
@@ -44,117 +29,108 @@ export default function MarketplacePage() {
   async function load() {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("listings")
-      .select("*")
-      .order("rank_score", { ascending: false });
-
-    if (error) {
-      console.error("Marketplace error:", error);
-      setLoading(false);
-      return;
-    }
-
-    setListings(data || []);
-    setLoading(false);
-
-    // 🔥 SAFE BACKGROUND RANK UPDATE (NON-BLOCKING)
-    refreshRanks(data || []);
-  }
-
-  /* =========================
-     SAFE BACKGROUND RANK UPDATE
-  ========================= */
-  async function refreshRanks(items: Listing[]) {
     try {
-      await Promise.all(
-        items.map((item) => updateRank(item.id))
+      const data = await listingRank.getRankedListings();
+      setListings(data);
+
+      // 🧠 preload trust scores for all owners (OPTIMIZED UI LAYER)
+      const trustResults = await Promise.all(
+        data.map(async (item) => ({
+          id: item.owner_id,
+          score: await trustScore.get(item.owner_id),
+        }))
       );
+
+      const map: Record<string, number> = {};
+      trustResults.forEach((t) => {
+        map[t.id] = t.score;
+      });
+
+      setTrustMap(map);
     } catch (err) {
-      console.error("Rank update error:", err);
+      console.error(err);
     }
+
+    setLoading(false);
   }
 
-  /* =========================
-     FILTER + SORT
-  ========================= */
-  const filtered = useMemo(() => {
-    return listings
-      .filter((item) => {
-        if (
-          filters.type !== "all" &&
-          item.type !== filters.type
-        )
-          return false;
+  const getTrustLabel = (score: number) => {
+    if (score >= 80) return "🟢 Verified";
+    if (score >= 60) return "🔵 Trusted";
+    if (score >= 40) return "🟡 New";
+    return "🔴 Low Trust";
+  };
 
-        if (
-          filters.search &&
-          !item.title
-            ?.toLowerCase()
-            .includes(filters.search.toLowerCase())
-        )
-          return false;
-
-        if (
-          filters.location &&
-          !item.location
-            ?.toLowerCase()
-            .includes(filters.location.toLowerCase())
-        )
-          return false;
-
-        return true;
-      })
-      .sort(
-        (a, b) =>
-          (b.rank_score || 0) - (a.rank_score || 0)
-      );
-  }, [listings, filters]);
-
-  /* =========================
-     UI
-  ========================= */
   return (
-    <main className="min-h-screen bg-[#050816] text-white px-6 py-10">
+    <div className="min-h-screen bg-[#050816] text-white p-6">
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-3xl font-bold">
-          Marketplace 🔥
-        </h1>
+      <h1 className="text-2xl font-bold mb-6">
+        Marketplace
+      </h1>
 
-        <p className="text-white/40 text-sm">
-          Ranked by views, boost & freshness
-        </p>
-      </div>
-
-      {/* CONTENT */}
-      {loading ? (
-        <p className="text-white/40 mt-6">
-          Loading marketplace...
-        </p>
-      ) : filtered.length === 0 ? (
-        <p className="text-white/40 mt-6">
-          No listings found.
-        </p>
-      ) : (
-        <div className="grid md:grid-cols-3 gap-5 mt-8">
-
-          {filtered.map((item) => (
-            <div
-              key={item.id}
-              onClick={() =>
-                router.push(`/listings/${item.id}`)
-              }
-              className="cursor-pointer"
-            >
-              <Card item={item} />
-            </div>
-          ))}
-
-        </div>
+      {/* LOADING */}
+      {loading && (
+        <p className="text-white/50">Loading ranked listings...</p>
       )}
 
-    </main>
+      {/* GRID */}
+      <div className="grid md:grid-cols-3 gap-4">
+        {listings.map((item) => {
+          const trust = trustMap[item.owner_id] ?? 50;
+
+          const isHighTrust = trust >= 80;
+
+          return (
+            <div
+              key={item.id}
+              className={`p-4 border rounded-xl transition hover:bg-white/10
+                ${
+                  isHighTrust
+                    ? "border-green-500/40 bg-green-500/10"
+                    : "border-white/10 bg-white/5"
+                }`}
+            >
+
+              {/* TITLE + TRUST BADGE */}
+              <h2 className="font-semibold flex items-center gap-2">
+                {item.title}
+
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+                  {getTrustLabel(trust)}
+                </span>
+              </h2>
+
+              {/* LOCATION */}
+              <p className="text-white/60 text-sm">
+                {item.location}
+              </p>
+
+              {/* TRUST SCORE */}
+              <p className="text-xs mt-1 text-white/50">
+                Trust Score: {trust}/100
+              </p>
+
+              {/* RANK SCORE */}
+              {item.rank && (
+                <p className="text-xs text-green-400 mt-1">
+                  Rank Score: {item.rank.toFixed(1)}
+                </p>
+              )}
+
+              {/* VIEW BUTTON */}
+              <button
+                onClick={() =>
+                  router.push(`/marketplace/${item.id}`)
+                }
+                className="mt-3 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                View
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

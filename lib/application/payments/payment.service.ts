@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export type PaymentProvider = "stripe" | "chapa";
 
@@ -15,7 +15,7 @@ export const paymentService = {
      CREATE PAYMENT INTENT
   ------------------------- */
   async createIntent(input: CreatePaymentIntentInput) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
     // 1. Create internal payment record first
     const { data: payment, error } = await supabase
@@ -24,7 +24,7 @@ export const paymentService = {
         campaign_id: input.campaignId,
         provider: input.provider,
         status: "pending",
-        amount: 0, // will be linked to campaign later
+        amount: 0,
       })
       .select()
       .single();
@@ -33,7 +33,7 @@ export const paymentService = {
       throw new Error(error.message);
     }
 
-    // 2. Simulate external provider response (Stripe/Chapa later)
+    // 2. Simulate external provider response
     const externalId =
       input.provider === "stripe"
         ? `stripe_${Date.now()}`
@@ -56,10 +56,10 @@ export const paymentService = {
   },
 
   /* -------------------------
-     VERIFY PAYMENT (WEBHOOK READY)
+     VERIFY PAYMENT
   ------------------------- */
   async verifyPayment(paymentId: string) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
     const { data: payment, error } = await supabase
       .from("payments")
@@ -78,3 +78,8 @@ export const paymentService = {
     return payment;
   },
 };
+
+
+
+
+

@@ -1,62 +1,61 @@
+import Stripe from "stripe";
 import { NextResponse } from "next/server";
-import { paymentService } from "@/lib/payments/payment.service";
-import { campaignService } from "@/lib/campaigns/campaign.service";
-// later: import { boostService } from "@/lib/boost/boost.service";
-// later: import { analyticsService } from "@/lib/analytics/analytics.service";
 
-export const runtime = "nodejs";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-/* =========================
-   STRIPE WEBHOOK (SIMPLIFIED)
-========================= */
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = await req.text();
+    const signature = req.headers.get("stripe-signature");
 
-    // ⚠️ In production: verify Stripe signature here
-    const eventType = body.type;
-    const paymentId = body.data?.paymentId;
-    const campaignId = body.data?.campaignId;
-
-    if (!paymentId || !campaignId) {
+    if (!signature) {
       return NextResponse.json(
-        { error: "Invalid webhook payload" },
+        { error: "Missing Stripe signature" },
         { status: 400 }
       );
     }
 
-    /* =========================
-       1. PAYMENT SUCCESS EVENT
-    ========================= */
-    if (eventType === "payment.succeeded") {
-      // mark payment as paid
-      await paymentService.verifyPayment(paymentId);
+    const event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
 
-      // activate campaign
-      await campaignService.activate(campaignId);
+    // =========================
+    // HANDLE EVENTS
+    // =========================
 
-      // 🚀 FUTURE HOOKS (we will implement next)
-      // await boostService.activate(campaignId);
-      // await analyticsService.start(campaignId);
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object;
+
+        console.log("Payment successful:", session.id);
+
+        // TODO: Activate boost or mark deal as paid
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+        console.log("Payment failed");
+        break;
+      }
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
-    /* =========================
-       2. PAYMENT FAILED EVENT
-    ========================= */
-    if (eventType === "payment.failed") {
-      // optional later
-    }
+    return NextResponse.json({ received: true });
+  } catch (err: any) {
+    console.error("Webhook error:", err);
 
-    return NextResponse.json({
-      success: true,
-    });
-  } catch (error: any) {
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message || "Webhook failed",
-      },
-      { status: 500 }
+      { error: err.message || "Webhook failed" },
+      { status: 400 }
     );
   }
 }
+
+
+
+
+

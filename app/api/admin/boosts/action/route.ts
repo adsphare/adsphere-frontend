@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+
+
+import { createServerSupabase } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 
 export async function POST(req: Request) {
   try {
     await requireAdmin();
 
-    const supabase = await createClient();
+  const supabase = createServerSupabase();
 
     const body = await req.json();
     const { boostId, action } = body;
@@ -27,7 +29,7 @@ export async function POST(req: Request) {
         .from("boosts")
         .update({
           status: "active",
-          expires_at: expires,
+          expires_at: expires.toISOString(),
         })
         .eq("id", boostId)
         .select()
@@ -46,7 +48,7 @@ export async function POST(req: Request) {
         .from("boosts")
         .update({
           status: "expired",
-          expires_at: new Date(),
+          expires_at: new Date().toISOString(),
         })
         .eq("id", boostId)
         .select()
@@ -63,10 +65,16 @@ export async function POST(req: Request) {
       { error: "Invalid action" },
       { status: 400 }
     );
+
   } catch (err: any) {
     return NextResponse.json(
-      { error: err.message },
+      { error: err.message || "Internal error" },
       { status: 500 }
     );
   }
 }
+
+
+
+
+

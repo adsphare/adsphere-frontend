@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export type EventType = "impression" | "click" | "conversion";
 
@@ -10,36 +10,35 @@ type TrackEventInput = {
 
 export const analyticsService = {
   /* =========================
-     TRACK EVENT
+     TRACK EVENT (FAST + SAFE)
   ========================= */
   async trackEvent(input: TrackEventInput) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
-    const { data, error } = await supabase
-      .from("analytics_events")
-      .insert({
-        listing_id: input.listingId,
-        event_type: input.type,
-        metadata: input.metadata ?? {},
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    const { error } = await supabase.from("analytics_events").insert({
+      listing_id: input.listingId,
+      event_type: input.type,
+      metadata: input.metadata ?? {},
+      created_at: new Date().toISOString(),
+    });
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("Analytics insert error:", error.message);
+      throw new Error(error.message);
+    }
 
-    return data;
+    return { success: true };
   },
 
   /* =========================
      GET LISTING STATS
   ========================= */
   async getListingStats(listingId: string) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
     const { data, error } = await supabase
       .from("analytics_events")
-      .select("*")
+      .select("event_type")
       .eq("listing_id", listingId);
 
     if (error) throw new Error(error.message);
@@ -52,8 +51,8 @@ export const analyticsService = {
 
     for (const event of data || []) {
       if (event.event_type === "impression") stats.impressions++;
-      if (event.event_type === "click") stats.clicks++;
-      if (event.event_type === "conversion") stats.conversions++;
+      else if (event.event_type === "click") stats.clicks++;
+      else if (event.event_type === "conversion") stats.conversions++;
     }
 
     return {
@@ -63,20 +62,16 @@ export const analyticsService = {
   },
 
   /* =========================
-     GET CAMPAIGN PERFORMANCE
+     PERFORMANCE METRICS
   ========================= */
   async getCampaignPerformance(listingId: string) {
     const stats = await this.getListingStats(listingId);
 
     const ctr =
-      stats.impressions > 0
-        ? stats.clicks / stats.impressions
-        : 0;
+      stats.impressions > 0 ? stats.clicks / stats.impressions : 0;
 
     const conversionRate =
-      stats.clicks > 0
-        ? stats.conversions / stats.clicks
-        : 0;
+      stats.clicks > 0 ? stats.conversions / stats.clicks : 0;
 
     return {
       ...stats,
@@ -85,3 +80,8 @@ export const analyticsService = {
     };
   },
 };
+
+
+
+
+

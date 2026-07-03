@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { db } from "@/lib/core/db";
 
 export default function ActivityPage() {
   const [events, setEvents] = useState<any[]>([]);
@@ -12,64 +12,73 @@ export default function ActivityPage() {
   }, []);
 
   async function loadActivity() {
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData?.user;
+    try {
+      const { data: userData } = await db.auth.getUser();
+      const user = userData?.user;
 
-    if (!user) {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // 1. Get listing IDs
+      const { data: listings } = await db
+        .from("listings")
+        .select("id")
+        .eq("user_id", user.id);
+
+      const listingIds = listings?.map((l) => l.id) || [];
+
+      // 2. Views / analytics
+      const { data: views } = await db
+        .from("analytics_events")
+        .select("*")
+        .in("listing_id", listingIds)
+        .order("created_at", { ascending: false });
+
+      // 3. Messages activity
+      const { data: messages } = await db
+        .from("messages")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      // 4. Merge events
+      const merged = [
+        ...(views || []).map((v) => ({
+          type: "view",
+          text: "Someone viewed your listing",
+          time: v.created_at,
+        })),
+        ...(messages || []).map((m) => ({
+          type: "message",
+          text: "New message received",
+          time: m.created_at,
+        })),
+      ];
+
+      merged.sort(
+        (a, b) =>
+          new Date(b.time).getTime() - new Date(a.time).getTime()
+      );
+
+      setEvents(merged);
+    } catch (err) {
+      console.error("Activity load error:", err);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Get listing IDs first
-    const { data: listings } = await supabase
-      .from("listings")
-      .select("id")
-      .eq("user_id", user.id);
-
-    const listingIds = listings?.map((l) => l.id) || [];
-
-    // Fetch activity events
-    const { data: views } = await supabase
-      .from("analytics_events")
-      .select("*")
-      .in("listing_id", listingIds)
-      .order("created_at", { ascending: false });
-
-    // Fetch messages activity (via conversations)
-    const { data: messages } = await supabase
-      .from("messages")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    const merged = [
-      ...(views || []).map((v) => ({
-        type: "view",
-        text: "Someone viewed your listing",
-        time: v.created_at,
-      })),
-      ...(messages || []).map((m) => ({
-        type: "message",
-        text: "New message received",
-        time: m.created_at,
-      })),
-    ];
-
-    merged.sort(
-      (a, b) =>
-        new Date(b.time).getTime() - new Date(a.time).getTime()
-    );
-
-    setEvents(merged);
-    setLoading(false);
   }
 
   if (loading) {
-    return <div className="p-6 text-white">Loading activity...</div>;
+    return (
+      <div className="p-6 text-white">Loading activity...</div>
+    );
   }
 
   return (
     <div className="p-6 text-white">
+
       <h1 className="text-2xl font-bold mb-6">Activity</h1>
 
       {events.length === 0 && (
@@ -89,6 +98,7 @@ export default function ActivityPage() {
           </div>
         ))}
       </div>
+
     </div>
   );
 }

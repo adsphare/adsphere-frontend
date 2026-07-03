@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
+    // ✅ Supabase client must be INSIDE handler
+     const supabase = createServerSupabase();
+
     const body = await req.json();
 
     const {
@@ -18,6 +16,7 @@ export async function POST(req: Request) {
       duration_days,
     } = body;
 
+    // ✅ validation
     if (!user_id || !listing_id) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -25,25 +24,33 @@ export async function POST(req: Request) {
       );
     }
 
-    const end_date = new Date();
-    end_date.setDate(end_date.getDate() + Number(duration_days || 0));
+    // ✅ compute end date safely
+    const endDate = new Date();
+    endDate.setDate(
+      endDate.getDate() + Number(duration_days || 0)
+    );
 
+    // ✅ create campaign
     const { data, error } = await supabase
       .from("campaigns")
       .insert({
         user_id,
         listing_id,
-        title,
-        budget,
-        end_date: end_date.toISOString(),
+        title: title ?? "",
+        budget: Number(budget ?? 0),
+        end_date: endDate.toISOString(),
       })
       .select()
       .single();
 
     if (error) {
-      return NextResponse.json({ error }, { status: 400 });
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
     }
 
+    // ✅ update listing safely
     await supabase
       .from("listings")
       .update({
@@ -53,12 +60,17 @@ export async function POST(req: Request) {
       .eq("id", listing_id);
 
     return NextResponse.json(data);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Campaign create error:", err);
 
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: err.message || "Internal Server Error" },
       { status: 500 }
     );
   }
 }
+
+
+
+
+

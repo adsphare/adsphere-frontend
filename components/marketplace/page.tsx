@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 function SkeletonCard() {
   return (
@@ -22,8 +22,24 @@ function SkeletonCard() {
   );
 }
 
+type Listing = {
+  id: string;
+  title: string;
+  description?: string;
+  image?: string | null;
+  location?: string;
+  price?: string;
+  type?: string;
+  views?: number;
+  ranking_score?: number;
+  boost_score?: number;
+  boost_expires_at?: string | null;
+};
+
 export default function MarketplacePage() {
-  const [listings, setListings] = useState<any[]>([]);
+  const supabase = createBrowserSupabase();
+
+  const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,6 +47,8 @@ export default function MarketplacePage() {
   }, []);
 
   async function fetchListings() {
+    setLoading(true);
+
     const { data, error } = await supabase
       .from("listings")
       .select("*")
@@ -38,28 +56,28 @@ export default function MarketplacePage() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.log("Marketplace error:", error);
+      console.error("Marketplace error:", error.message);
       setLoading(false);
       return;
     }
 
-    setListings(data || []);
+    setListings((data as Listing[]) || []);
     setLoading(false);
   }
 
   const now = new Date();
 
-  const listingsFixed = (listings || []).map((item) => ({
+  const listingsFixed = listings.map((item) => ({
     ...item,
     boost_score:
       item.boost_expires_at &&
       new Date(item.boost_expires_at) < now
         ? 0
-        : item.boost_score,
+        : item.boost_score ?? 0,
   }));
 
   const featuredCount = listingsFixed.filter(
-    (item) => item.boost_score > 0
+    (item) => (item.boost_score ?? 0) > 0
   ).length;
 
   return (
@@ -74,7 +92,7 @@ export default function MarketplacePage() {
         {/* HEADER */}
         <div className="mb-10">
           <h1 className="text-4xl font-bold">
-            Adsphre Marketplace
+            Adsphere Marketplace
           </h1>
 
           <p className="text-white/50 mt-2">
@@ -90,7 +108,6 @@ export default function MarketplacePage() {
             <p className="text-xs text-white/50">
               Total Listings
             </p>
-
             <p className="text-xl font-semibold">
               {listingsFixed.length}
             </p>
@@ -110,7 +127,7 @@ export default function MarketplacePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
 
-          {/* SIDEBAR */}
+          {/* Sidebar */}
           <div className="space-y-4">
 
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
@@ -120,7 +137,6 @@ export default function MarketplacePage() {
               </h3>
 
               <div className="space-y-3 text-white/60 text-sm">
-
                 <button className="block hover:text-white">
                   📱 Creators
                 </button>
@@ -140,14 +156,13 @@ export default function MarketplacePage() {
                 <button className="block hover:text-white">
                   📧 Newsletters
                 </button>
-
               </div>
 
             </div>
 
           </div>
 
-          {/* LISTINGS */}
+          {/* Listings */}
           <div className="md:col-span-2 space-y-6">
 
             {loading &&
@@ -155,21 +170,17 @@ export default function MarketplacePage() {
                 <SkeletonCard key={i} />
               ))}
 
-            {!loading &&
-              listingsFixed.length === 0 && (
-                <div className="border border-white/10 rounded-xl py-20 text-center text-white/40">
-                  No listings yet — be the first to post 🚀
-                </div>
-              )}
+            {!loading && listingsFixed.length === 0 && (
+              <div className="border border-white/10 rounded-xl py-20 text-center text-white/40">
+                No listings yet — be the first to post 🚀
+              </div>
+            )}
 
             {listingsFixed.map((item, index) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 20 }}
-                whileInView={{
-                  opacity: 1,
-                  y: 0,
-                }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{
                   duration: 0.3,
@@ -180,7 +191,7 @@ export default function MarketplacePage() {
 
                   <div className="relative border border-white/10 bg-white/5 rounded-xl overflow-hidden hover:bg-white/10 transition">
 
-                    {item.boost_score > 0 && (
+                    {(item.boost_score ?? 0) > 0 && (
                       <>
                         <div className="absolute inset-0 bg-yellow-500/5 pointer-events-none" />
 
@@ -190,13 +201,12 @@ export default function MarketplacePage() {
                       </>
                     )}
 
-                    {/* IMAGE */}
                     <div className="relative h-56 bg-black">
 
                       {item.image ? (
                         <Image
                           src={item.image}
-                          alt={item.title || "Listing"}
+                          alt={item.title}
                           fill
                           className="object-cover"
                         />
@@ -208,7 +218,6 @@ export default function MarketplacePage() {
 
                     </div>
 
-                    {/* CONTENT */}
                     <div className="p-5">
 
                       <h2 className="font-semibold text-lg">
@@ -243,18 +252,23 @@ export default function MarketplacePage() {
 
                       </div>
 
-                      {/* DEBUG RANK */}
                       <div className="mt-2 text-xs text-green-400">
                         Rank: {item.ranking_score || 0}
                       </div>
 
                       <div className="flex gap-3 mt-5">
 
-                        <button className="px-4 py-2 bg-white text-black rounded-full text-sm hover:scale-105 transition">
+                        <button
+                          type="button"
+                          className="px-4 py-2 bg-white text-black rounded-full text-sm hover:scale-105 transition"
+                        >
                           View Details
                         </button>
 
-                        <button className="px-4 py-2 border border-white/20 rounded-full text-sm hover:border-blue-500 transition">
+                        <button
+                          type="button"
+                          className="px-4 py-2 border border-white/20 rounded-full text-sm hover:border-blue-500 transition"
+                        >
                           Book Now
                         </button>
 
@@ -270,7 +284,7 @@ export default function MarketplacePage() {
 
           </div>
 
-          {/* AI PANEL */}
+          {/* AI Panel */}
           <div className="space-y-4">
 
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
@@ -280,15 +294,10 @@ export default function MarketplacePage() {
               </h3>
 
               <div className="space-y-3 text-sm text-white/60">
-
                 <p>🔥 High ROI creator opportunities</p>
-
                 <p>📈 Trending campaigns</p>
-
                 <p>🎯 Suggested categories</p>
-
                 <p>🚀 Fastest growing listings</p>
-
               </div>
 
             </div>

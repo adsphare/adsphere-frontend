@@ -42,3 +42,5 @@ export const listings = [
         price: "$90/day",
     },
 ];
+
+

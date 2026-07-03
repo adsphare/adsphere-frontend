@@ -1,36 +1,31 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-// 🔥 SERVER SUPABASE (IMPORTANT)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createServerSupabase();
     const body = await req.json();
 
-    let { message, conversationId, senderId } = body;
+    const { conversationId, senderId, content, type } = body;
 
-    // ✅ SAFE TRIM FIRST
-    message = message?.trim();
-
-    // 🔥 VALIDATION
-    if (!message || !conversationId || !senderId) {
+    if (!conversationId || !senderId) {
       return NextResponse.json(
         { error: "Missing fields" },
         { status: 400 }
       );
     }
 
-    // 💬 INSERT MESSAGE
-    const { error } = await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: senderId,
-      message,
-      created_at: new Date().toISOString(),
-    });
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        sender_id: senderId,
+        content,
+        type: type || "text",
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
     if (error) {
       return NextResponse.json(
@@ -39,13 +34,15 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ message: data });
   } catch (err: any) {
-    console.error("sendMessage error:", err);
-
     return NextResponse.json(
-      { error: "Server error" },
+      { error: err.message || "Server error" },
       { status: 500 }
     );
   }
 }
+
+
+
+

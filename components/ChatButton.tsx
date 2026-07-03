@@ -1,11 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { getOrCreateConversation } from "@/lib/messaging/chats";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { getOrCreateConversation } from "@/lib/messaging/getOrCreateConversation";
 
 export default function ChatButton({ listing }: { listing: any }) {
   const router = useRouter();
+
+  // ✅ REQUIRED
+  const supabase = createBrowserSupabase();
 
   async function startChat() {
     const {
@@ -13,14 +16,19 @@ export default function ChatButton({ listing }: { listing: any }) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push("/login");
+      router.push("/auth/login");
+      return;
+    }
+
+    if (!listing?.id || !listing?.user_id) {
+      console.error("Invalid listing data");
       return;
     }
 
     const conversation = await getOrCreateConversation({
       listingId: listing.id,
       buyerId: user.id,
-      ownerId: listing.owner_id,
+      sellerId: listing.user_id,
     });
 
     router.push(`/messages/${conversation.id}`);

@@ -1,26 +1,36 @@
-import { supabase } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase/server";
+import { rankListing } from "@/lib/ranking/rankListing";
 
 export async function updateRank(listingId: string) {
-  const { data } = await supabase
+  const supabase = createServerSupabase();
+
+  const { data, error } = await supabase
     .from("listings")
-    .select("views, boost_expires_at")
+    .select("*")
     .eq("id", listingId)
     .single();
 
-  if (!data) return;
+  if (error || !data) return null;
 
-  let rank = (data.views || 0);
+  // 🧠 SINGLE SOURCE OF TRUTH
+  const score = rankListing(data);
 
-  // BOOST multiplier
-  if (
-    data.boost_expires_at &&
-    new Date(data.boost_expires_at) > new Date()
-  ) {
-    rank *= 5;
+  const { error: updateError } = await supabase
+    .from("listings")
+    .update({
+      rank_score: score,
+    })
+    .eq("id", listingId);
+
+  if (updateError) {
+    console.error("Rank update failed:", updateError.message);
+    return null;
   }
 
-  await supabase
-    .from("listings")
-    .update({ rank_score: rank })
-    .eq("id", listingId);
+  return { listingId, score };
 }
+
+
+
+
+

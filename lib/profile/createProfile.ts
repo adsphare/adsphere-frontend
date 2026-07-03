@@ -1,6 +1,8 @@
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export async function ensureProfile(userId: string, email?: string) {
+  const supabase = createBrowserSupabase();
+
   const { data } = await supabase
     .from("profiles")
     .select("*")

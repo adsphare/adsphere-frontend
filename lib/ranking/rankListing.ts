@@ -1,30 +1,42 @@
-export function rankListing(item: any) {
-  const boostMultiplier = item.is_boosted
-    ? item.boost_level || 1
-    : 1;
+export type Listing = {
+  boost_score?: number;
+  created_at?: string;
+  views?: number;
+  clicks?: number;
+};
 
-  const ctr =
-    item.impressions > 0
-      ? item.clicks / item.impressions
-      : 0;
+export function rankListing(listing: Listing) {
+  const now = Date.now();
 
-  const conversion =
-    item.clicks > 0
-      ? item.conversions / item.clicks
-      : 0;
+  const createdAt = listing.created_at
+    ? new Date(listing.created_at).getTime()
+    : now;
 
-  const freshnessPenalty =
-    1 /
-    (1 +
-      Math.log(
-        Date.now() - new Date(item.created_at).getTime()
-      ));
+  const ageHours = (now - createdAt) / (1000 * 60 * 60);
 
-  return (
-    (ctr * 50 +
-      conversion * 100 +
-      (item.views || 0) * 0.01) *
-    boostMultiplier *
-    freshnessPenalty
-  );
+  // 🧠 1. TIME DECAY (bounded curve instead of linear drop)
+  const timeScore = 100 / (1 + ageHours * 0.05);
+
+  // 🚀 2. BOOST SCORE (capped to prevent abuse)
+  const boostScore = Math.min(listing.boost_score || 0, 1000);
+
+  // 👁 3. ENGAGEMENT SIGNALS
+  const views = listing.views || 0;
+  const clicks = listing.clicks || 0;
+
+  // clicks matter more than views (intent > exposure)
+  const engagementScore = views * 0.1 + clicks * 3;
+
+  // 🧮 FINAL SCORE
+  const finalScore =
+    timeScore +
+    boostScore * 1.2 +
+    engagementScore;
+
+  return finalScore;
 }
+
+
+
+
+

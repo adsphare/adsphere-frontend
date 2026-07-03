@@ -1,24 +1,43 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const { listingId } = await req.json();
+  try {
+    const supabase = createServerSupabase(); // ✅ FIXED
 
-  const supabase = await createClient();
+    const { listingId } = await req.json();
 
-  // increment impressions safely
-  const { data: current } = await supabase
-    .from("listings")
-    .select("impressions")
-    .eq("id", listingId)
-    .single();
+    if (!listingId) {
+      return NextResponse.json(
+        { success: false, message: "Missing listingId" },
+        { status: 400 }
+      );
+    }
 
-  await supabase
-    .from("listings")
-    .update({
-      impressions: (current?.impressions || 0) + 1,
-    })
-    .eq("id", listingId);
+    // 🔥 atomic increment (RPC)
+    const { error } = await supabase.rpc("increment_impressions", {
+      listing_id_input: listingId,
+    });
 
-  return NextResponse.json({ success: true });
+    if (error) {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, message: err.message },
+      { status: 500 }
+    );
+  }
 }
+
+
+
+
+

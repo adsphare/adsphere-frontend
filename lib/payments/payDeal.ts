@@ -1,36 +1,65 @@
-import { supabase } from "@/lib/supabase";
+import { createPayment } from "./payment.service";
+import type { PaymentProvider } from "./types";
 
-export async function payDeal({
-  dealId,
-  userId,
-}: {
-  dealId: string;
+/* =========================
+   PAY DEAL INPUT
+========================= */
+export type PayDealInput = {
+  provider: PaymentProvider;
+
+  escrowId: string;
   userId: string;
-}) {
-  const { data: deal, error } = await supabase
-    .from("deals")
-    .select("*")
-    .eq("id", dealId)
-    .single();
 
-  if (error || !deal) throw new Error("Deal not found");
+  amount: number;
+  currency?: string;
 
-  if (deal.buyer_id !== userId) {
-    throw new Error("Only buyer can pay");
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+};
+
+/* =========================
+   PAY DEAL (MAIN ENTRY)
+========================= */
+export async function payDeal(input: PayDealInput) {
+  const {
+    provider,
+    escrowId,
+    userId,
+    amount,
+    currency = "usd",
+    email,
+    firstName,
+    lastName,
+  } = input;
+
+  if (!escrowId || !userId || !amount) {
+    throw new Error("Missing required payment fields");
   }
 
-  const { data, error: updateError } = await supabase
-    .from("deals")
-    .update({
-      payment_status: "paid",
-      paid_at: new Date().toISOString(),
-      payment_method: "mock",
-    })
-    .eq("id", dealId)
-    .select()
-    .single();
+  /* =========================
+     CREATE PAYMENT SESSION
+  ========================= */
+  const result = await createPayment({
+    provider,
+    amount,
+    currency,
+    userId,
+    escrowId,
+    email,
+    firstName,
+    lastName,
+  });
 
-  if (updateError) throw updateError;
+  /* =========================
+     CLEAN RETURN (NO DUPLICATE KEYS)
+  ========================= */
+  const { provider: _ignored, ...safeResult } = result;
 
-  return data;
+  return {
+    success: true,
+    provider,
+    escrowId,
+    ...safeResult,
+  };
 }

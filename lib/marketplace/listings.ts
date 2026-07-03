@@ -1,141 +1,52 @@
-import { createClient } from "@/lib/supabase/server";
-import { rankListing } from "@/lib/server/rank";
+"use client";
 
-/* =========================
-   RESPONSE WRAPPER
-========================= */
-function response(data: any, error: any) {
-  return {
-    success: !error,
-    data,
-    error,
-  };
-}
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { rankListing } from "@/lib/ranking/rankListing";
 
-/* =========================
-   CREATE LISTING
-========================= */
-export async function createListing(listing: {
-  user_id: string;
-  title: string;
-  location: string;
-  price: string;
-  type: string;
-  description: string;
-}) {
-  const supabase = await createClient();
+const supabase = createBrowserSupabase(); // ✅ FIXED
 
+export async function createListing(
+  listing: any
+) {
   const { data, error } = await supabase
     .from("listings")
-    .insert([listing])
+    .insert(listing)
     .select()
     .single();
 
-  return response(data, error);
+  if (error) return { success: false, error };
+
+  return { success: true, data };
 }
 
-/* =========================
-   GET ALL LISTINGS (FIXED BOOST ENGINE)
-========================= */
 export async function getListings() {
-  const supabase = await createClient();
-
   const { data, error } = await supabase
     .from("listings")
-    .select("*");
+    .select("*")
+    .eq("status", "active");
 
-  if (error) return response(null, error);
+  if (error) return { success: false, data: [], error };
 
   const now = Date.now();
 
-  const cleaned = (data || []).map((item) => {
+  const cleaned = (data || []).map((item: any) => {
     const expires = item.boost_expires_at
       ? new Date(item.boost_expires_at).getTime()
       : null;
 
-    const isExpired =
-      item.is_boosted && expires && expires < now;
+    const expired = item.boosted && expires && expires < now;
 
     return {
       ...item,
-
-      // safe normalization
-      is_boosted: isExpired ? false : item.is_boosted,
-      boost_level: isExpired ? 0 : item.boost_level,
-      boost_score: isExpired ? 0 : item.boost_score,
+      boosted: expired ? false : item.boosted,
+      boost_score: expired ? 0 : item.boost_score,
     };
   });
 
-  /* =========================
-     SAFE SORTING
-  ========================= */
-  const sorted = cleaned.sort((a, b) => {
-    try {
-      return rankListing(b) - rankListing(a);
-    } catch {
-      return 0;
-    }
-  });
-
-  return response(sorted, null);
-}
-
-/* =========================
-   GET SINGLE LISTING
-========================= */
-export async function getListingById(id: string) {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  return response(data, error);
-}
-
-/* =========================
-   GET USER LISTINGS
-========================= */
-export async function getUserListings(userId: string) {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  return response(data, error);
-}
-
-/* =========================
-   DELETE LISTING
-========================= */
-export async function deleteListing(id: string) {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("listings")
-    .delete()
-    .eq("id", id);
-
-  return response(data, error);
-}
-
-/* =========================
-   INCREMENT VIEWS (FIXED ATOMIC VERSION)
-========================= */
-export async function incrementViews(id: string) {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.rpc(
-    "increment_listing_views",
-    {
-      row_id: id,
-    }
-  );
-
-  return response(data, error);
+  return {
+    success: true,
+    data: cleaned.sort(
+      (a: any, b: any) => (rankListing(b) || 0) - (rankListing(a) || 0)
+    ),
+  };
 }

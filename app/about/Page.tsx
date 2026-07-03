@@ -13,8 +13,10 @@ export default function AboutPage() {
 
         <section>
           <h2 className="text-2xl font-semibold">What is AdSphere?</h2>
-          <p className="text-white/60 mt-3">
-            AdSphere is a unified advertising marketplace.
+
+          <p className="text-white/60 mt-3 leading-relaxed">
+            AdSphere is a unified advertising marketplace that connects brands,
+            creators, advertisers, and platforms in one ecosystem.
           </p>
         </section>
 
@@ -22,3 +24,8 @@ export default function AboutPage() {
     </main>
   );
 }
+
+
+
+
+

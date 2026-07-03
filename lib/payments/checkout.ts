@@ -1,33 +1,41 @@
-import { supabase } from "@/lib/supabase";
+import { createPayment } from "./payment.service";
+import type { PaymentProvider } from "./types";
 
-export async function createCheckoutSession({
-  dealId,
-  amount,
-}: {
-  dealId: string;
+type CheckoutInput = {
+  provider: PaymentProvider;
+
+  escrowId: string;
+  userId: string;
+
   amount: number;
-}) {
-  // 1. create checkout session (mock structure for now)
-  const res = await fetch("/api/checkout", {
-    method: "POST",
-    body: JSON.stringify({
-      dealId,
-      amount,
-    }),
+  currency?: string;
+
+  // Required for Chapa
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+};
+
+export async function createCheckoutSession(input: CheckoutInput) {
+  const result = await createPayment({
+    provider: input.provider,
+    escrowId: input.escrowId,
+    userId: input.userId,
+    amount: input.amount,
+    currency: input.currency ?? "usd",
+
+    email: input.email,
+    firstName: input.firstName,
+    lastName: input.lastName,
   });
 
-  const data = await res.json();
+  if (!result.checkoutUrl) {
+    throw new Error("Failed to create checkout session");
+  }
 
-  if (!data.url) throw new Error("Payment failed");
-
-  // 2. store session in DB
-  await supabase
-    .from("deals")
-    .update({
-      stripe_session_id: data.sessionId,
-      payment_status: "pending",
-    })
-    .eq("id", dealId);
-
-  return data.url;
+  return result;
 }
+
+
+
+

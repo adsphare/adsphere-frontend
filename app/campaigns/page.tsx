@@ -1,10 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export default async function CampaignPage() {
-  const supabase = await createClient();
+  const supabase = createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
 
@@ -21,7 +23,14 @@ export default async function CampaignPage() {
 
       <div style={{ marginTop: 20 }}>
         {campaigns?.map((c) => (
-          <div key={c.id} style={{ padding: 10, border: "1px solid #333", marginBottom: 10 }}>
+          <div
+            key={c.id}
+            style={{
+              padding: 10,
+              border: "1px solid #333",
+              marginBottom: 10,
+            }}
+          >
             <h3>{c.title}</h3>
             <p>{c.description}</p>
             <p>Budget: {c.budget}</p>
@@ -32,3 +41,8 @@ export default async function CampaignPage() {
     </div>
   );
 }
+
+
+
+
+

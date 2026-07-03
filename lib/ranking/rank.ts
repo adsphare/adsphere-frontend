@@ -1,34 +1,23 @@
-import { supabase } from "@/lib/supabase";
+export function calculateRank(listing: any) {
+  const boost = listing.boost_score || 0;
+  const views = listing.views || 0;
 
-export async function updateRank(listingId: string) {
-  const { data, error } = await supabase
-    .from("listings")
-    .select("boost_score, views, created_at")
-    .eq("id", listingId)
-    .single();
+  const boostMultiplier =
+    listing.boost_expires_at &&
+    new Date(listing.boost_expires_at).getTime() > Date.now()
+      ? 5
+      : 1;
 
-  if (error || !data) return;
+  const ageHours =
+    (Date.now() - new Date(listing.created_at).getTime()) /
+    (1000 * 60 * 60);
 
-  const boost = data.boost_score || 0;
-  const views = data.views || 0;
+  const freshness = Math.max(0, 100 - ageHours);
 
-  let freshness = 0;
-
-  if (data.created_at) {
-    const ageHours =
-      (Date.now() - new Date(data.created_at).getTime()) /
-      (1000 * 60 * 60);
-
-    freshness = Math.max(0, 100 - ageHours);
-  }
-
-  const rank_score =
-    boost * 5 +
-    views * 0.5 +
-    freshness * 0.3;
-
-  await supabase
-    .from("listings")
-    .update({ rank_score })
-    .eq("id", listingId);
+  return boost * 5 * boostMultiplier + views * 0.5 + freshness * 0.3;
 }
+
+
+
+
+

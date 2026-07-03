@@ -1,180 +1,105 @@
-"use client";
+import ChatButton from "@/components/ChatButton";
+import { createServerSupabase } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
 
-import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { createDeal } from "@/lib/messaging/chats";
+type Props = {
+  params: { id: string };
+};
 
-export default function ChatPage({ params }: { params: { id: string } }) {
-  const conversationId = params.id;
+type Listing = {
+  id: string;
+  title: string;
+  location: string;
+  type?: string;
+  price?: number;
+  description?: string;
+  images?: string[];
+  metadata?: any;
+  user_id: string;
+};
 
-  const [messages, setMessages] = useState<any[]>([]);
-  const [conversation, setConversation] = useState<any>(null);
-  const [input, setInput] = useState("");
-  const [user, setUser] = useState<any>(null);
+export default async function MarketplaceDetailPage({ params }: Props) {
+  const supabase = await createServerSupabase();
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const { data: listing, error } = await supabase
+    .from("listings")
+    .select("*")
+    .eq("id", params.id)
+    .single();
 
-  useEffect(() => {
-    init();
-  }, []);
-
-  async function init() {
-    const { data: auth } = await supabase.auth.getUser();
-    setUser(auth.user);
-
-    const { data: conv } = await supabase
-      .from("conversations")
-      .select("*")
-      .eq("id", conversationId)
-      .single();
-
-    setConversation(conv);
-
-    loadMessages();
-    subscribe();
+  if (error || !listing) {
+    notFound();
   }
 
-  async function loadMessages() {
-    const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
-
-    setMessages(data || []);
-  }
-
-  function subscribe() {
-    const channel = supabase
-      .channel(`chat-${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new]);
-        }
-      )
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
-  }
-
-  async function sendMessage() {
-    if (!user || !input.trim()) return;
-
-    await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      message: input,
-      created_at: new Date().toISOString(),
-    });
-
-    setInput("");
-  }
-
-  async function sendOffer() {
-    const amount = prompt("Offer amount?");
-    if (!amount || !user) return;
-
-    await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      message: `💰 Offer: $${amount}`,
-      offer_amount: Number(amount),
-      offer_status: "pending",
-      created_at: new Date().toISOString(),
-    });
-  }
-
-  async function acceptOffer(msg: any) {
-    if (!conversation) return;
-
-    await createDeal({
-      listingId: conversation.listing_id,
-      conversationId: conversation.id,
-      buyerId: conversation.buyer_id,
-      ownerId: conversation.owner_id,
-      amount: msg.offer_amount,
-    });
-
-    await supabase
-      .from("messages")
-      .update({ offer_status: "accepted" })
-      .eq("id", msg.id);
-  }
+  const image = listing?.images?.[0];
 
   return (
-    <main className="flex flex-col min-h-screen bg-[#050816] text-white">
+    <main className="min-h-screen bg-[#050816] text-white">
 
-      {/* HEADER */}
-      <div className="p-4 border-b border-white/10">
-        <h1 className="font-bold">Chat</h1>
+      {/* HERO IMAGE */}
+      <div className="h-[420px] w-full bg-black overflow-hidden">
+        {image ? (
+          <img
+            src={image}
+            alt={listing.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-white/30">
+            No Image Available
+          </div>
+        )}
       </div>
 
-      {/* MESSAGES */}
-      <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+      {/* CONTENT */}
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
 
-        {messages.map((msg) => {
-          const isMine = msg.sender_id === user?.id;
+        {/* HEADER */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold">{listing.title}</h1>
 
-          return (
-            <div
-              key={msg.id}
-              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-            >
-              <div className="max-w-[70%] p-3 rounded-xl bg-white/10">
+            <p className="text-white/40 mt-1">
+              📍 {listing.location}
+            </p>
 
-                <p>{msg.message}</p>
+            <p className="text-sm text-white/30 mt-1">
+              Type: {listing.type || "N/A"}
+            </p>
+          </div>
 
-                {msg.offer_amount && (
-                  <p className="text-yellow-400 text-sm mt-1">
-                    Offer: ${msg.offer_amount}
-                  </p>
-                )}
+          <div className="text-2xl font-bold text-green-400">
+            ${listing.price ?? 0}
+          </div>
+        </div>
 
-                {msg.offer_status === "pending" &&
-                  !isMine && (
-                    <button
-                      onClick={() => acceptOffer(msg)}
-                      className="mt-2 px-3 py-1 bg-green-600 rounded"
-                    >
-                      Accept Offer
-                    </button>
-                  )}
+        {/* DESCRIPTION */}
+        <p className="text-white/70 leading-relaxed">
+          {listing.description || "No description available."}
+        </p>
 
-              </div>
-            </div>
-          );
-        })}
+        {/* METADATA */}
+        {listing.metadata && (
+          <div className="bg-white/5 border border-white/10 p-4 rounded-lg">
+            <h3 className="font-semibold mb-2">Details</h3>
 
-        <div ref={bottomRef} />
-      </div>
+            <pre className="text-white/60 text-sm overflow-auto">
+              {JSON.stringify(listing.metadata, null, 2)}
+            </pre>
+          </div>
+        )}
 
-      {/* INPUT */}
-      <div className="p-3 flex gap-2 border-t border-white/10">
-
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="flex-1 px-3 py-2 rounded bg-white/5"
-          placeholder="Message..."
-        />
-
-        <button onClick={sendOffer} className="px-3 bg-green-600 rounded">
-          💰
-        </button>
-
-        <button onClick={sendMessage} className="px-3 bg-blue-600 rounded">
-          Send
-        </button>
+        {/* CHAT */}
+        <div className="pt-6 border-t border-white/10">
+          <ChatButton
+            listing={{
+              id: listing.id,
+              user_id: listing.user_id,
+            }}
+          />
+        </div>
 
       </div>
-
     </main>
   );
 }

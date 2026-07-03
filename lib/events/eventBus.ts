@@ -1,22 +1,16 @@
-type EventName =
-  | "CampaignCreated"
-  | "CampaignActivated"
-  | "PaymentVerified"
-  | "BoostActivated";
-
-type Listener = (payload: any) => void;
+export type Listener = (payload: any) => void;
 
 class EventBus {
   private listeners: Record<string, Listener[]> = {};
 
-  on(event: EventName, handler: Listener) {
+  on(event: string, handler: Listener) {
     if (!this.listeners[event]) {
       this.listeners[event] = [];
     }
     this.listeners[event].push(handler);
   }
 
-  emit(event: EventName, payload: any) {
+  emit(event: string, payload?: any) {
     const handlers = this.listeners[event];
     if (!handlers) return;
 
@@ -25,3 +19,8 @@ class EventBus {
 }
 
 export const eventBus = new EventBus();
+
+
+
+
+

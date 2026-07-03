@@ -1,99 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import Button from "@/components/ui/Button";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  async function handleLogin() {
-    const cleanEmail = email.trim().toLowerCase();
+  // ✅ FIX: create supabase client
+  const supabase = useMemo(() => createBrowserSupabase(), []);
 
-    if (!cleanEmail) {
+  async function login() {
+    if (!email) {
       alert("Please enter your email");
       return;
     }
 
-    setLoading(true);
-
     try {
-      const origin =
-        typeof window !== "undefined"
-          ? window.location.origin
-          : "";
+      setLoading(true);
 
       const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
+        email,
         options: {
-          emailRedirectTo: `${origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (error) {
-        console.error("Login error:", error);
+        console.error("Login error:", error.message);
         alert(error.message);
         return;
       }
 
-      alert("Check your email for the magic link ✉️");
-
-      setEmail("");
-
-      // optional: redirect to a "check email" page
       router.push("/auth/check-email");
-
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      alert("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#050816] text-white px-6">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[#050816] text-white">
+      <div className="p-6 bg-white/5 rounded-xl w-full max-w-md">
+        <h1 className="text-xl font-bold mb-4">Login</h1>
 
-        <h1 className="text-4xl font-bold text-center mb-2">
-          AdSphere
-        </h1>
+        <input
+          className="w-full p-2 text-black rounded"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-        <p className="text-center text-white/50 mb-6">
-          Sign in with your email magic link
-        </p>
-
-        <div className="bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur">
-
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="
-              w-full p-3 rounded-lg mb-4
-              bg-black/40 border border-white/10
-              outline-none focus:border-blue-500
-            "
-          />
-
-          <Button
-            onClick={handleLogin}
-            disabled={loading || !email.trim()}
-            className="w-full"
-          >
-            {loading ? "Sending Link..." : "Send Magic Link"}
-          </Button>
-
-          <p className="text-xs text-white/40 text-center mt-4">
-            We’ll send you a secure login link to your email
-          </p>
-
-        </div>
+        <button
+          onClick={login}
+          disabled={loading}
+          className="mt-4 w-full bg-blue-600 p-2 rounded"
+        >
+          {loading ? "Sending..." : "Send Magic Link"}
+        </button>
       </div>
-    </main>
+    </div>
   );
 }

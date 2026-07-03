@@ -1,40 +1,39 @@
-"use client";
+type Listing = {
+  id?: string;
+  title: string;
+  location: string;
+  price?: number;
+  type?: string;
+};
 
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { getOrCreateConversation } from "@/lib/messaging/chats";
+type CardProps = {
+  item: Listing;
+  onClick?: () => void;
+};
 
-export default function Card({ item }: { item: any }) {
-  const router = useRouter();
-
-  async function openChat() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return router.push("/login");
-
-    const conv = await getOrCreateConversation({
-      listingId: item.id,
-      buyerId: user.id,
-      ownerId: item.owner_id,
-    });
-
-    router.push(`/messages/${conv.id}`);
-  }
-
+export default function Card({ item, onClick }: CardProps) {
   return (
-    <div className="border border-white/10 rounded-xl p-4 bg-white/5">
-      <h3>{item.title}</h3>
-      <p>{item.location}</p>
-      <p>${item.price}</p>
+    <div
+      onClick={onClick}
+      className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition cursor-pointer"
+    >
+      <h2 className="text-lg font-semibold">{item.title}</h2>
 
-      <button
-        onClick={openChat}
-        className="mt-3 px-4 py-2 bg-blue-600 rounded"
-      >
-        Message
-      </button>
+      <p className="text-white/40 text-sm mt-1">
+        📍 {item.location}
+      </p>
+
+      {item.price && (
+        <p className="text-green-400 mt-2 font-medium">
+          ${item.price}
+        </p>
+      )}
+
+      {item.type && (
+        <p className="text-xs text-white/30 mt-1">
+          {item.type}
+        </p>
+      )}
     </div>
   );
 }

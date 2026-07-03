@@ -1,36 +1,57 @@
+
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export default function VerificationPage() {
+  const supabase = createBrowserSupabase(); // ✅ FIX HERE
+
   const [type, setType] = useState("creator");
+  const [loading, setLoading] = useState(false);
 
   const submit = async () => {
-    const { data } = await supabase.auth.getUser();
+    try {
+      setLoading(true);
 
-    if (!data.user) return;
+      const { data, error: userError } = await supabase.auth.getUser();
 
-    await supabase.from("verification_requests").insert({
-      user_id: data.user.id,
-      type,
-      status: "pending",
-    });
+      if (userError || !data.user) {
+        alert("Not logged in");
+        return;
+      }
 
-    alert("Submitted for verification");
+      const { error } = await supabase.from("verification_requests").insert({
+        user_id: data.user.id,
+        type,
+        status: "pending",
+      });
+
+      if (error) {
+        console.error(error.message);
+        alert(error.message);
+        return;
+      }
+
+      alert("Submitted for verification 🛡");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div style={{ padding: 20 }}>
       <h1>🛡 Verification</h1>
 
-      <select onChange={(e) => setType(e.target.value)}>
+      <select value={type} onChange={(e) => setType(e.target.value)}>
         <option value="creator">Creator</option>
         <option value="brand">Brand</option>
         <option value="advertiser">Advertiser</option>
       </select>
 
-      <button onClick={submit}>Submit</button>
+      <button onClick={submit} disabled={loading}>
+        {loading ? "Submitting..." : "Submit"}
+      </button>
     </div>
   );
 }

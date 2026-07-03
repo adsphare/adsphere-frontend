@@ -1,16 +1,24 @@
-import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function getSetting(key: string) {
-  const { data } = await supabase
+  const supabase = createServerSupabase();
+
+  const { data, error } = await supabase
     .from("settings")
     .select("value")
     .eq("key", key)
-    .single();
+    .maybeSingle(); // ✅ safer than .single()
 
-  return data?.value;
+  if (error) {
+    console.error("getSetting error:", error.message);
+    return null;
+  }
+
+  return data?.value ?? null;
 }
+
+
+
+
+

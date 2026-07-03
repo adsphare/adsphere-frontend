@@ -1,80 +1,75 @@
 import { NextResponse } from "next/server";
-<<<<<<< HEAD
-import { activateBoost } from "@/lib/boostService";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const { tx_ref, listingId, plan } = await req.json();
-=======
+    const CHAPA_SECRET_KEY = process.env.CHAPA_SECRET_KEY;
 
-export async function POST(req: Request) {
-  try {
+    if (!CHAPA_SECRET_KEY) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Missing CHAPA_SECRET_KEY",
+        },
+        { status: 500 }
+      );
+    }
+
     const { tx_ref } = await req.json();
->>>>>>> 6c58162 (refactor: move globals.css to app, add 3D scene system, stabilize layout architecture)
+
+    if (!tx_ref) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Missing transaction reference",
+        },
+        { status: 400 }
+      );
+    }
 
     const res = await fetch(
       `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
       {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${process.env.CHAPA_SECRET_KEY}`,
+          Authorization: `Bearer ${CHAPA_SECRET_KEY}`,
         },
       }
     );
 
     const data = await res.json();
 
-<<<<<<< HEAD
-    const isPaid =
-      data?.status === "success" &&
-      data?.data?.status === "success";
-
-    if (!isPaid) {
+    if (!res.ok || data.status !== "success") {
       return NextResponse.json(
-        { success: false, message: "Payment not confirmed" },
+        {
+          success: false,
+          message: "Payment verification failed",
+        },
         { status: 400 }
       );
     }
 
-    await activateBoost({
-      listingId,
-      plan,
-      provider: "chapa",
-    });
-
     return NextResponse.json({
       success: true,
-      message: "Boost activated",
+      message: "Payment verified successfully",
+      data,
     });
-  } catch (err) {
-    console.error(err);
-
-    return NextResponse.json(
-      { success: false, message: "Server error" },
-=======
-    if (data.status === "success") {
-      return NextResponse.json({
-        success: true,
-        message: "Payment verified successfully",
-      });
-    }
+  } catch (err: any) {
+    console.error("Chapa verify error:", err);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Payment verification failed",
+        message: err?.message || "Server error",
       },
-      { status: 400 }
-    );
-  } catch (error) {
-    console.error("Chapa verification error:", error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Server error",
-      },
->>>>>>> 6c58162 (refactor: move globals.css to app, add 3D scene system, stabilize layout architecture)
       { status: 500 }
     );
   }
 }
+
+
+
+
+

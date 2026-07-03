@@ -88,3 +88,8 @@ export default function ListingCard({ item }: { item: Listing }) {
     </div>
   );
 }
+
+
+
+
+

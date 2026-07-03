@@ -1,8 +1,10 @@
-import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-export async function createClient() {
-  const cookieStore = await cookies();
+export function createServerSupabase() {
+  const cookieStore = cookies() as unknown as {
+    getAll: () => { name: string; value: string }[];
+  };
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,14 +14,9 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Server Components may not allow setting cookies
-          }
+
+        setAll() {
+          // Next.js 15 safe no-op
         },
       },
     }

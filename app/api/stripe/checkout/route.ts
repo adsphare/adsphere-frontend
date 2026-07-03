@@ -3,61 +3,113 @@ import Stripe from "stripe";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+/* =========================
+   ENV SAFETY
+========================= */
+const secretKey = process.env.STRIPE_SECRET_KEY;
 
+if (!secretKey) {
+  throw new Error("Missing STRIPE_SECRET_KEY");
+}
+
+/* =========================
+   STRIPE CLIENT
+========================= */
+const stripe = new Stripe(secretKey, {
+  apiVersion: "2026-05-27.dahlia",
 });
 
+/* =========================
+   PRICES
+========================= */
+const BOOST_PRICES: Record<string, number> = {
+  basic: 500,
+  premium: 1200,
+};
+
+/* =========================
+   MAIN ROUTE
+========================= */
 export async function POST(req: Request) {
-  const { listingId, userId, plan } = await req.json();
+  try {
+    const body = await req.json();
 
-  if (!listingId || !userId || !plan) {
-    return NextResponse.json(
-      { error: "Missing required fields" },
-      { status: 400 }
-    );
-  }
+    const listingId = body?.listingId;
+    const userId = body?.userId;
+    const plan = body?.plan;
+    const agreementId = body?.agreementId ?? undefined;
 
-  const prices: Record<string, number> = {
-    basic: 500,   // $5.00
-    premium: 1200, // $12.00
-  };
+    /* =========================
+       VALIDATION
+    ========================= */
+    if (!listingId || !userId || !plan) {
+      return NextResponse.json(
+        { success: false, error: "Missing fields" },
+        { status: 400 }
+      );
+    }
 
-  const amount = prices[plan];
+    const amount = BOOST_PRICES[plan];
 
-  if (!amount) {
-    return NextResponse.json(
-      { error: "Invalid plan" },
-      { status: 400 }
-    );
-  }
+    if (!amount) {
+      return NextResponse.json(
+        { success: false, error: "Invalid plan" },
+        { status: 400 }
+      );
+    }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    payment_method_types: ["card"],
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-    line_items: [
-      {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: `Adsphere Boost (${plan})`,
+    /* =========================
+       STRIPE SESSION
+    ========================= */
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+
+      payment_method_types: ["card"],
+
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Adspheria Boost (${plan})`,
+            },
+            unit_amount: amount,
           },
-          unit_amount: amount,
+          quantity: 1,
         },
-        quantity: 1,
+      ],
+
+      success_url: `${baseUrl}/boost/success`,
+      cancel_url: `${baseUrl}/boost/cancel`,
+
+      /* =========================
+         METADATA (IMPORTANT FOR WEBHOOKS)
+      ========================= */
+      metadata: {
+        listingId: String(listingId),
+        userId: String(userId),
+        plan: String(plan),
+        type: "boost",
+        agreementId: agreementId ? String(agreementId) : "",
       },
-    ],
+    });
 
-    success_url: `${process.env.NEXT_PUBLIC_URL}/boost/success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_URL}/boost/cancel`,
+    return NextResponse.json({
+      success: true,
+      url: session.url,
+    });
+  } catch (err: any) {
+    console.error("Stripe checkout error:", err);
 
-    metadata: {
-      listingId,
-      userId,
-      plan,
-      type: "boost",
-    },
-  });
-
-  return NextResponse.json({ url: session.url });
+    return NextResponse.json(
+      {
+        success: false,
+        error: err?.message ?? "Internal server error",
+      },
+      { status: 500 }
+    );
+  }
 }

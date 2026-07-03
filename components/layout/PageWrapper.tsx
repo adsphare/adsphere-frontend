@@ -7,9 +7,14 @@ export default function PageWrapper({
 }) {
   return (
     <main className="min-h-screen bg-[#050816] text-white">
-      <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="w-full max-w-7xl mx-auto px-6 py-8">
         {children}
       </div>
     </main>
   );
 }
+
+
+
+
+

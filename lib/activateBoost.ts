@@ -1,47 +1,64 @@
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
-export async function activateBoost({
-  listingId,
-  plan,
-  provider,
-}: {
-  listingId: string;
-  plan: "basic" | "premium" | "pro";
-  provider: "stripe";
-}) {
-  const now = new Date();
+type BoostPlan = "basic" | "pro" | "premium";
 
-  const boostDays = plan === "premium" ? 7 : 3;
+const BOOST_CONFIG: Record<
+  BoostPlan,
+  { days: number; score: number }
+> = {
+  basic: {
+    days: 3,
+    score: 10,
+  },
+  pro: {
+    days: 7,
+    score: 25,
+  },
+  premium: {
+    days: 14,
+    score: 50,
+  },
+};
 
-  const expiresAt = new Date(
-    now.getTime() + boostDays * 24 * 60 * 60 * 1000
-  );
+export async function activateBoost(
+  listingId: string,
+  plan: BoostPlan = "basic"
+) {
+  const supabase = createBrowserSupabase();
 
-  const boostScore =
-    plan === "premium" ? 50 : plan === "pro" ? 35 : 20;
+  try {
+    const config = BOOST_CONFIG[plan];
 
-  const { error } = await supabase
-    .from("listings")
-    .update({
-      boost_score: boostScore,
-      boost_expires_at: expiresAt.toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", listingId);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + config.days);
 
-  if (error) {
-    console.error("Boost activation error:", error);
-    throw error;
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        boosted: true,
+        boost_plan: plan,
+        boost_score: config.score,
+        boost_expires_at: expiresAt.toISOString(),
+        last_boost_at: new Date().toISOString(),
+      })
+      .eq("id", listingId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("activateBoost error:", error.message);
+      return { success: false, error };
+    }
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (err: any) {
+    console.error("activateBoost crash:", err.message);
+    return {
+      success: false,
+      error: err.message,
+    };
   }
-
-  // optional: log boost payment
-  await supabase.from("payments").insert({
-    listing_id: listingId,
-    amount: boostScore,
-    status: "paid",
-    provider,
-    created_at: new Date().toISOString(),
-  });
-
-  return { success: true };
 }

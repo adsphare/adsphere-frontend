@@ -1,26 +1,54 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export default function CreateCampaignPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // ✅ FIX: create supabase instance
+  const supabase = createBrowserSupabase();
 
   const createCampaign = async () => {
-    const { data: user } = await supabase.auth.getUser();
+    try {
+      setLoading(true);
 
-    if (!user.user) return;
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    await supabase.from("campaigns").insert({
-      user_id: user.user.id,
-      title,
-      description,
-      budget: 0,
-      status: "draft",
-    });
+      if (userError || !user) {
+        alert("User not authenticated");
+        return;
+      }
 
-    alert("Campaign created!");
+      const { error } = await supabase.from("campaigns").insert({
+        user_id: user.id,
+        title,
+        description,
+        budget: 0,
+        status: "draft",
+      });
+
+      if (error) {
+        console.error("Campaign error:", error.message);
+        alert(error.message);
+        return;
+      }
+
+      alert("Campaign created!");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+
+      console.error(message);
+      alert(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,6 +57,7 @@ export default function CreateCampaignPage() {
 
       <input
         placeholder="Title"
+        value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
 
@@ -36,13 +65,14 @@ export default function CreateCampaignPage() {
 
       <textarea
         placeholder="Description"
+        value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
 
       <br />
 
-      <button onClick={createCampaign}>
-        Create
+      <button onClick={createCampaign} disabled={loading}>
+        {loading ? "Creating..." : "Create"}
       </button>
     </div>
   );

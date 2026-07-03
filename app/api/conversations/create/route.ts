@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
+    const supabase = createServerSupabase();
+
     const { listingId, buyerId, sellerId } = await req.json();
 
     if (!listingId || !buyerId || !sellerId) {
@@ -17,14 +16,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔥 SAFE CHECK (NO .single())
+    // 🔍 check existing conversation
     const { data: existing, error: findError } = await supabase
       .from("conversations")
       .select("*")
       .eq("listing_id", listingId)
       .eq("buyer_id", buyerId)
       .eq("seller_id", sellerId)
-      .maybeSingle(); // ✅ FIX
+      .maybeSingle();
 
     if (findError) {
       return NextResponse.json(
@@ -33,18 +32,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ IF EXISTS RETURN IT
+    // ✅ return existing conversation
     if (existing) {
       return NextResponse.json(existing);
     }
 
-    // 🆕 CREATE NEW CONVERSATION
+    // 🆕 create new conversation
     const { data, error } = await supabase
       .from("conversations")
       .insert({
         listing_id: listingId,
         buyer_id: buyerId,
         seller_id: sellerId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -59,8 +60,13 @@ export async function POST(req: Request) {
     return NextResponse.json(data);
   } catch (err: any) {
     return NextResponse.json(
-      { error: err.message },
+      { error: err.message || "Server error" },
       { status: 500 }
     );
   }
 }
+
+
+
+
+

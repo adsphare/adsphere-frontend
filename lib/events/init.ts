@@ -1,5 +1,12 @@
-import { registerCampaignCreated } from "./subscribers/campaignCreated";
+import { registerMessageEvents } from "@/lib/events/message.events";
 
 export function initEvents() {
-  registerCampaignCreated();
+  console.log("[Event System Initialized]");
+
+  registerMessageEvents();
 }
+
+
+
+
+

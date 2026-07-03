@@ -3,13 +3,13 @@ export type AdEventType =
   | "click"
   | "conversion"
   | "boost_view"
-  | "boost_click";import { createClient } from "@/lib/supabase/server";
+  | "boost_click";import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function trackAdEvent(input: {
   listingId: string;
   type: "impression" | "click" | "conversion" | "boost_view" | "boost_click";
 }) {
-  const supabase = await createClient();
+  const supabase = createServerSupabase();
 
   /* =========================
      1. STORE EVENT (RAW DATA)
@@ -45,3 +45,8 @@ export async function trackAdEvent(input: {
 
   return { success: true };
 }
+
+
+
+
+

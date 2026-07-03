@@ -1,250 +1,192 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { createDeal } from "@/lib/messaging/chats";
+import { useParams } from "next/navigation";
+
+import { chat } from "@/lib/core/chat";
+import { db } from "@/lib/core/db";
+import { usePresence } from "@/lib/core/presence/usePresence";
+
+import MessageBubble from "@/components/chat/MessageBubble";
+import MessageInput from "@/components/chat/MessageInput";
 
 type Message = {
   id: string;
   conversation_id: string;
   sender_id: string;
-  message: string;
+  content: string;
   created_at: string;
-  offer_amount?: number;
-  offer_status?: string;
 };
 
-export default function ChatPage({ params }: { params: { id: string } }) {
-  const conversationId = params.id;
+export default function ChatPage() {
+  const { id: conversationId } = useParams<{ id: string }>();
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [conversation, setConversation] = useState<any>(null);
-  const [input, setInput] = useState("");
-  const [user, setUser] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const typingChannelRef = useRef<any>(null);
 
   /* =========================
-     INIT
+     LOAD USER
   ========================= */
   useEffect(() => {
-    init();
-
-    const cleanup = subscribe();
-
-    return () => {
-      cleanup(); // ✅ safe cleanup
-    };
+    chat.getUser().then((user) => {
+      setUserId(user?.id || null);
+    });
   }, []);
 
-  async function init() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  /* =========================
+     PRESENCE SYSTEM (FIXED)
+     - safe null handling
+  ========================= */
+  usePresence(userId ?? null);
 
-    setUser(user);
+  /* =========================
+     LOAD MESSAGES
+  ========================= */
+  async function loadMessages() {
+    if (!conversationId) return;
 
-    const { data } = await supabase
-      .from("conversations")
-      .select("*")
-      .eq("id", conversationId)
-      .single();
-
-    setConversation(data);
-
-    const { data: msgs } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
-
-    setMessages(msgs || []);
-
-    scrollToBottom();
+    const data = await chat.getMessages(conversationId);
+    setMessages(data);
   }
 
   /* =========================
-     REALTIME (FIXED)
+     REALTIME MESSAGES
   ========================= */
-  function subscribe() {
-    const channel = supabase
-      .channel(`chat-${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
-          scrollToBottom();
-        }
-      )
+  useEffect(() => {
+    if (!conversationId) return;
+
+    loadMessages();
+
+    const unsubscribe = chat.subscribe(conversationId, (msg) => {
+      setMessages((prev) => {
+        const exists = prev.some((m) => m.id === msg.id);
+        if (exists) return prev;
+        return [...prev, msg];
+      });
+    });
+
+    return unsubscribe;
+  }, [conversationId]);
+
+  /* =========================
+     MARK AS READ
+  ========================= */
+  useEffect(() => {
+    if (!conversationId || !userId) return;
+
+    chat.markAsRead(conversationId, userId);
+  }, [conversationId, userId]);
+
+  /* =========================
+     TYPING SYSTEM (FIXED SUPABASE)
+  ========================= */
+  useEffect(() => {
+    if (!conversationId || !userId) return;
+
+    const channel = db.channel(`typing-${conversationId}`);
+    typingChannelRef.current = channel;
+
+    channel
+      .on("broadcast", { event: "typing" }, (payload) => {
+        const senderId = payload.payload?.userId;
+
+        if (!senderId || senderId === userId) return;
+
+        setTypingUsers((prev) => {
+          if (prev.includes(senderId)) return prev;
+          return [...prev, senderId];
+        });
+
+        setTimeout(() => {
+          setTypingUsers((prev) =>
+            prev.filter((id) => id !== senderId)
+          );
+        }, 2000);
+      })
       .subscribe();
 
     return () => {
-      // ✅ FIX: prevent Promise return issue
-      void supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
-  }
+  }, [conversationId, userId]);
+
+  /* =========================
+     AUTO SCROLL
+  ========================= */
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   /* =========================
      SEND MESSAGE
   ========================= */
-  async function sendMessage() {
-    if (!user || !input.trim()) return;
+  async function handleSend(text: string) {
+    if (!userId || !conversationId) return;
 
-    await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      message: input,
-      created_at: new Date().toISOString(),
-      read: false,
-    });
-
-    setInput("");
-  }
-
-  /* =========================
-     SEND OFFER
-  ========================= */
-  async function sendOffer() {
-    if (!user) return;
-
-    const amount = prompt("Enter offer amount");
-    if (!amount) return;
-
-    await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      message: `💰 Offer: $${amount}`,
-      offer_amount: Number(amount),
-      offer_status: "pending",
-      created_at: new Date().toISOString(),
+    await chat.sendMessage({
+      conversationId,
+      senderId: userId,
+      content: text,
     });
   }
 
   /* =========================
-     ACCEPT OFFER → CREATE DEAL
+     SEND TYPING EVENT (FIXED)
   ========================= */
-  async function acceptOffer(msg: Message) {
-    if (!user || !conversation) return;
+  function handleTyping() {
+    if (!conversationId || !userId) return;
 
-    const deal = await createDeal({
-      listingId: conversation.listing_id,
-      conversationId: conversation.id,
-      buyerId: conversation.buyer_id,
-      ownerId: conversation.owner_id,
-      amount: msg.offer_amount!,
+    const channel = typingChannelRef.current;
+    if (!channel) return;
+
+    channel.send({
+      type: "broadcast",
+      event: "typing",
+      payload: {
+        userId,
+        conversationId,
+      },
     });
-
-    await supabase
-      .from("messages")
-      .update({ offer_status: "accepted" })
-      .eq("id", msg.id);
-
-    await supabase
-      .from("conversations")
-      .update({
-        last_message: `Deal: $${msg.offer_amount}`,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", conversationId);
-
-    console.log("Deal created:", deal);
   }
 
-  function scrollToBottom() {
-    setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  }
-
-  /* =========================
-     UI
-  ========================= */
   return (
-    <main className="min-h-screen bg-[#050816] text-white flex flex-col">
+    <div className="h-screen flex flex-col bg-[#050816] text-white">
 
       {/* HEADER */}
       <div className="p-4 border-b border-white/10">
-        <h1 className="text-lg font-semibold">Chat</h1>
-        <p className="text-xs text-white/40">
-          Marketplace conversation
-        </p>
+        <h1 className="font-semibold">Conversation</h1>
       </div>
 
       {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((msg) => {
-          const isMine = msg.sender_id === user?.id;
+        {messages.map((m) => (
+          <MessageBubble
+            key={m.id}
+            content={m.content}
+            isMine={m.sender_id === userId}
+            createdAt={m.created_at}
+          />
+        ))}
 
-          return (
-            <div
-              key={msg.id}
-              className={`flex ${
-                isMine ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm ${
-                  isMine ? "bg-blue-600" : "bg-white/10"
-                }`}
-              >
-                <div>{msg.message}</div>
-
-                {/* OFFER */}
-                {msg.offer_amount && (
-                  <div className="mt-2 text-yellow-300 font-bold">
-                    Offer: ${msg.offer_amount}
-                  </div>
-                )}
-
-                {/* ACCEPT BUTTON */}
-                {msg.offer_status === "pending" &&
-                  !isMine &&
-                  msg.offer_amount && (
-                    <button
-                      onClick={() => acceptOffer(msg)}
-                      className="mt-2 px-3 py-1 bg-green-600 rounded"
-                    >
-                      Accept Offer
-                    </button>
-                  )}
-              </div>
-            </div>
-          );
-        })}
+        {/* TYPING INDICATOR */}
+        {typingUsers.length > 0 && (
+          <div className="text-sm text-white/50 px-2 py-1 animate-pulse">
+            Someone is typing...
+          </div>
+        )}
 
         <div ref={bottomRef} />
       </div>
 
       {/* INPUT */}
-      <div className="p-4 border-t border-white/10 flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10"
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-        />
-
-        <button
-          onClick={sendOffer}
-          className="px-4 py-3 bg-green-600 rounded-xl"
-        >
-          💰
-        </button>
-
-        <button
-          onClick={sendMessage}
-          className="px-4 py-3 bg-blue-600 rounded-xl"
-        >
-          Send
-        </button>
-      </div>
-    </main>
+      <MessageInput
+        onSend={handleSend}
+        onTyping={handleTyping}
+      />
+    </div>
   );
 }

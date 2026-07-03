@@ -1,10 +1,12 @@
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { updateRank } from "@/lib/ranking/updateRank";
 
 /**
  * Tracks listing views safely and updates ranking
  */
 export async function trackView(listingId: string) {
+  const supabase = createBrowserSupabase();
+
   if (!listingId) return;
 
   try {
@@ -20,10 +22,15 @@ export async function trackView(listingId: string) {
     const newViews = (data.views || 0) + 1;
 
     // 2. Update views
-    await supabase
+    const { error: updateError } = await supabase
       .from("listings")
       .update({ views: newViews })
       .eq("id", listingId);
+
+    if (updateError) {
+      console.error("view update error:", updateError.message);
+      return;
+    }
 
     // 3. Update ranking after view
     await updateRank(listingId);

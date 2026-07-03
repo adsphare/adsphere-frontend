@@ -1,30 +1,33 @@
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
-export async function uploadImage(file: File) {
+const supabase = createBrowserSupabase();
+
+/* =========================
+   STORAGE UPLOAD
+========================= */
+export async function uploadFile(file: File): Promise<string | null> {
   try {
-    // 1. Create unique file name
+    // Create unique filename
     const fileName = `${Date.now()}-${file.name}`;
 
-    // 2. Upload file to Supabase Storage bucket
+    // Upload to Supabase Storage
     const { data, error } = await supabase.storage
-      .from("listings") // bucket name
+      .from("listings")
       .upload(fileName, file);
 
     if (error) {
-      console.log("Upload error:", error);
+      console.error("Upload error:", error);
       return null;
     }
 
-    // 3. Get public URL
+    // Get public URL
     const { data: publicUrlData } = supabase.storage
       .from("listings")
       .getPublicUrl(data.path);
 
-    // 4. Return image URL
     return publicUrlData.publicUrl;
-
   } catch (err) {
-    console.log("Upload failed:", err);
+    console.error("Upload failed:", err);
     return null;
   }
 }

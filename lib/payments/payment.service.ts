@@ -1,94 +1,84 @@
-import { createClient } from "@/lib/supabase/server";
+import { createChapaCheckout } from "@/lib/infrastructure/chapa/checkout";
+import { stripe } from "@/lib/infrastructure/stripe/client";
 
-export type PaymentProvider = "stripe" | "chapa";
+import type { CreatePaymentInput } from "./types";
 
-export type PaymentStatus =
-  | "pending"
-  | "paid"
-  | "failed"
-  | "refunded";
+export async function createPayment(input: CreatePaymentInput) {
+  const {
+    provider,
+    amount,
+    currency = "usd",
+    escrowId,
+    email,
+    firstName,
+    lastName,
+  } = input;
 
-type CreateIntentInput = {
-  campaignId: string;
-  provider: PaymentProvider;
-  amount: number;
-};
+  if (!escrowId) throw new Error("Missing escrowId");
+  if (amount <= 0) throw new Error("Invalid payment amount");
 
-export const paymentService = {
+  const paymentReference = `escrow_${escrowId}_${Date.now()}`;
+
   /* =========================
-     CREATE PAYMENT INTENT
+     STRIPE
   ========================= */
-  async createIntent(input: CreateIntentInput) {
-    const supabase = await createClient();
+  if (provider === "stripe") {
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency,
+            product_data: { name: "Escrow Payment" },
+            unit_amount: Math.round(amount * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        escrowId,
+        paymentReference,
+        provider: "stripe",
+      },
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cancel`,
+    });
 
-    const { data, error } = await supabase
-      .from("payments")
-      .insert({
-        campaign_id: input.campaignId,
-        provider: input.provider,
-        amount: input.amount,
-        status: "pending",
-      })
-      .select()
-      .single();
+    if (!session.url) throw new Error("Stripe did not return URL");
 
-    if (error) throw new Error(error.message);
-
-    // ⚠️ In real Stripe/Chapa integration,
-    // you return checkout URL here
     return {
-      paymentId: data.id,
-      status: data.status,
+      provider: "stripe" as const,
+      checkoutUrl: session.url,
+      paymentReference,
     };
-  },
+  }
 
   /* =========================
-     VERIFY PAYMENT (WEBHOOK LOGIC)
+     CHAPA
   ========================= */
-  async verifyPayment(paymentId: string) {
-    const supabase = await createClient();
+  if (!email || !firstName || !lastName) {
+    throw new Error("Missing Chapa customer information");
+  }
 
-    const { data: payment, error } = await supabase
-      .from("payments")
-      .select("*")
-      .eq("id", paymentId)
-      .single();
+  const chapa = await createChapaCheckout({
+    amount,
+    currency,
+    email,
+    first_name: firstName,
+    last_name: lastName,
+    tx_ref: paymentReference,
+    callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/chapa/webhook`,
+    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/success`,
+  });
 
-    if (error) throw new Error("Payment not found");
+  if (!chapa?.checkoutUrl) {
+    throw new Error("Chapa did not return checkout URL");
+  }
 
-    if (payment.status === "paid") {
-      return payment;
-    }
-
-    const { data, error: updateError } = await supabase
-      .from("payments")
-      .update({
-        status: "paid",
-        paid_at: new Date().toISOString(),
-      })
-      .eq("id", paymentId)
-      .select()
-      .single();
-
-    if (updateError) throw new Error(updateError.message);
-
-    return data;
-  },
-
-  /* =========================
-     GET PAYMENT
-  ========================= */
-  async getById(paymentId: string) {
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-      .from("payments")
-      .select("*")
-      .eq("id", paymentId)
-      .single();
-
-    if (error) throw new Error(error.message);
-
-    return data;
-  },
-};
+  return {
+    provider: "chapa" as const,
+    checkoutUrl: chapa.checkoutUrl,
+    paymentReference,
+  };
+}

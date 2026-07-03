@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { stripe } from "@/lib/infrastructure/stripe";
 
 export const runtime = "nodejs";
 
@@ -14,14 +14,26 @@ export async function POST(req: Request) {
       );
     }
 
+    // 💰 centralized pricing
     const priceMap: Record<string, number> = {
       basic: 500,
       pro: 1000,
       premium: 2500,
     };
 
+    const amount = priceMap[plan];
+
+    if (!amount) {
+      return NextResponse.json(
+        { success: false, message: "Invalid plan" },
+        { status: 400 }
+      );
+    }
+
+    // 💳 create checkout session
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+
       payment_method_types: ["card"],
 
       line_items: [
@@ -31,7 +43,7 @@ export async function POST(req: Request) {
             product_data: {
               name: `Boost (${plan})`,
             },
-            unit_amount: priceMap[plan],
+            unit_amount: amount,
           },
           quantity: 1,
         },
@@ -51,12 +63,20 @@ export async function POST(req: Request) {
       success: true,
       url: session.url,
     });
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+    console.error("Stripe error:", err);
 
     return NextResponse.json(
-      { success: false, message: "Stripe init failed" },
+      {
+        success: false,
+        message: err.message || "Stripe init failed",
+      },
       { status: 500 }
     );
   }
 }
+
+
+
+
+

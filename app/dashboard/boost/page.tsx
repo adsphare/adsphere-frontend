@@ -1,13 +1,7 @@
 "use client";
 
-<<<<<<< HEAD
-import { useState } from "react";
-import BoostButton from "@/components/BoostButton";
-import PaymentModal from "@/components/PaymentModal";
-import { supabase } from "@/lib/supabase";
-=======
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useEffect, useState, useMemo } from "react";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 import BoostModal from "@/components/BoostModal";
 
 type Listing = {
@@ -17,20 +11,16 @@ type Listing = {
   price: string;
   image?: string;
   is_boosted?: boolean;
-  boost_level?: number;
   boost_expires_at?: string | null;
 };
->>>>>>> 6c58162 (refactor: move globals.css to app, add 3D scene system, stabilize layout architecture)
 
 export default function BoostPage() {
-  const [open, setOpen] = useState(false);
+  const supabase = useMemo(() => createBrowserSupabase(), []);
 
-<<<<<<< HEAD
-  // real user + listing should come from DB in your app
-  const listingId = "demo-listing-id";
-  const userId = "demo-user-id";
-=======
-  // MODAL STATE
+  const [userId, setUserId] = useState<string | null>(null);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [openBoost, setOpenBoost] = useState(false);
   const [selectedListing, setSelectedListing] = useState<string | null>(null);
 
@@ -61,7 +51,7 @@ export default function BoostPage() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Fetch listings error:", error);
+      console.error(error);
       setLoading(false);
       return;
     }
@@ -77,126 +67,80 @@ export default function BoostPage() {
       </div>
     );
   }
->>>>>>> 6c58162 (refactor: move globals.css to app, add 3D scene system, stabilize layout architecture)
 
   return (
     <main className="min-h-screen bg-[#050816] text-white p-10">
       <h1 className="text-3xl font-bold mb-6">Boost Center 🚀</h1>
 
-      <BoostButton onClick={() => setOpen(true)} />
+      {listings.length === 0 ? (
+        <p className="text-white/40">No listings found</p>
+      ) : (
+        <div className="grid md:grid-cols-3 gap-6">
+          {listings.map((item) => {
+            const isActive =
+              item.is_boosted &&
+              item.boost_expires_at &&
+              new Date(item.boost_expires_at).getTime() > Date.now();
 
-<<<<<<< HEAD
-      <PaymentModal
-        open={open}
-        onClose={() => setOpen(false)}
-        listingId={listingId}
-        userId={userId}
-      />
-=======
-        {/* EMPTY STATE */}
-        {listings.length === 0 ? (
-          <p className="text-white/40">No listings found</p>
-        ) : (
-          <div className="grid md:grid-cols-3 gap-6">
-
-            {listings.map((item) => {
-              const isActive =
-                item.is_boosted &&
-                item.boost_expires_at &&
-                new Date(item.boost_expires_at).getTime() > Date.now();
-
-              return (
-                <div
-                  key={item.id}
-                  className="border border-white/10 bg-white/5 rounded-xl overflow-hidden"
-                >
-
-                  {/* IMAGE */}
-                  <div className="h-40 bg-black">
-                    {item.image ? (
-                      <img
-                        src={item.image}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-white/30">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-
-                  {/* CONTENT */}
-                  <div className="p-4">
-
-                    <h3 className="font-semibold">{item.title}</h3>
-
-                    <p className="text-white/40 text-sm">
-                      {item.location}
-                    </p>
-
-                    <p className="text-blue-400 font-bold mt-2">
-                      {item.price}
-                    </p>
-
-                    {/* BOOST STATUS */}
-                    <div className="mt-3">
-                      {isActive ? (
-                        <span className="text-xs px-2 py-1 bg-green-500 text-black rounded inline-block">
-                          🚀 Boost Active
-                        </span>
-                      ) : (
-                        <span className="text-xs text-white/40">
-                          Not boosted
-                        </span>
-                      )}
+            return (
+              <div
+                key={item.id}
+                className="border border-white/10 bg-white/5 rounded-xl overflow-hidden"
+              >
+                <div className="h-40 bg-black">
+                  {item.image ? (
+                    <img src={item.image} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-white/30">
+                      No Image
                     </div>
-
-                    {/* EXPIRE INFO */}
-                    {item.boost_expires_at && (
-                      <p className="text-xs text-white/30 mt-2">
-                        Expires:{" "}
-                        {new Date(item.boost_expires_at).toLocaleDateString()}
-                      </p>
-                    )}
-
-                    {/* BOOST BUTTON */}
-                    <div className="mt-4">
-                      {userId && (
-                        <button
-                          onClick={() => {
-                            setSelectedListing(item.id);
-                            setOpenBoost(true);
-                          }}
-                          className="w-full px-3 py-2 bg-blue-500 text-black rounded"
-                        >
-                          Boost 🚀
-                        </button>
-                      )}
-                    </div>
-
-                  </div>
+                  )}
                 </div>
-              );
-            })}
 
-          </div>
-        )}
+                <div className="p-4">
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="text-white/40 text-sm">{item.location}</p>
+                  <p className="text-blue-400 font-bold mt-2">{item.price}</p>
 
-        {/* MODAL */}
-        {selectedListing && (
-          <BoostModal
-            open={openBoost}
-            onClose={() => {
-              setOpenBoost(false);
-              setSelectedListing(null);
-            }}
-            listingId={selectedListing}
-            userId={userId!}
-          />
-        )}
+                  <div className="mt-3">
+                    {isActive ? (
+                      <span className="text-xs px-2 py-1 bg-green-500 text-black rounded">
+                        🚀 Boost Active
+                      </span>
+                    ) : (
+                      <span className="text-xs text-white/40">
+                        Not boosted
+                      </span>
+                    )}
+                  </div>
 
-      </div>
->>>>>>> 6c58162 (refactor: move globals.css to app, add 3D scene system, stabilize layout architecture)
+                  <button
+                    onClick={() => {
+                      setSelectedListing(item.id);
+                      setOpenBoost(true);
+                    }}
+                    className="w-full mt-4 px-3 py-2 bg-blue-500 text-black rounded"
+                  >
+                    Boost 🚀
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {selectedListing && (
+        <BoostModal
+          open={openBoost}
+          onClose={() => {
+            setOpenBoost(false);
+            setSelectedListing(null);
+          }}
+          listingId={selectedListing}
+          
+        />
+      )}
     </main>
   );
 }

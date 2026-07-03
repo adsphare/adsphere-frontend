@@ -1,22 +1,52 @@
-export function calculateBoostPerformance(data: any[]) {
-  return (data || []).map((item) => {
-    const impressions = item.impressions || 0;
-    const clicks = item.clicks || 0;
-    const conversions = item.views_generated || 0;
+import { createServerSupabase } from "@/lib/supabase/server";
 
-    const ctr =
-      impressions > 0 ? (clicks / impressions) * 100 : 0;
+type BoostAnalytics = {
+  id: string;
+  plan: string;
+  impressions: number;
+  clicks: number;
+  views_generated: number;
+};
 
-    const conversion =
-      clicks > 0 ? (conversions / clicks) * 100 : 0;
+export default async function Page() {
+  const supabase = createServerSupabase();
 
-    return {
-      id: item.id,
-      plan: item.plan,
-      impressions,
-      clicks,
-      ctr: Number(ctr.toFixed(2)),
-      conversion: Number(conversion.toFixed(2)),
-    };
-  });
+  const { data } = await supabase
+    .from("boost_analytics")
+    .select("*");
+
+  const analytics = (data || []).map((item: BoostAnalytics) => ({
+    id: item.id,
+    plan: item.plan,
+    impressions: item.impressions || 0,
+    clicks: item.clicks || 0,
+
+    ctr:
+      item.impressions > 0
+        ? (item.clicks / item.impressions) * 100
+        : 0,
+
+    conversion:
+      item.clicks > 0
+        ? (item.views_generated / item.clicks) * 100
+        : 0,
+  }));
+
+  return (
+    <main className="p-10 text-white">
+      <h1 className="text-2xl font-bold mb-6">
+        Boost Analytics
+      </h1>
+
+      <div className="space-y-3">
+        {analytics.map((a) => (
+          <div key={a.id} className="border p-3 border-white/10">
+            <p>Plan: {a.plan}</p>
+            <p>CTR: {a.ctr.toFixed(2)}%</p>
+            <p>Conversion: {a.conversion.toFixed(2)}%</p>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
 }

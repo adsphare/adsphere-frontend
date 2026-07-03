@@ -1,98 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import Button from "@/components/ui/Button";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  async function handleRegister() {
-    const cleanEmail = email.trim().toLowerCase();
+  // ✅ FIX: create supabase client
+  const supabase = useMemo(() => createBrowserSupabase(), []);
 
-    if (!cleanEmail) {
-      alert("Please enter your email");
+  async function handleLogin() {
+    if (!email) {
+      setError("Please enter your email");
       return;
     }
 
-    setLoading(true);
-
     try {
-      const origin =
-        typeof window !== "undefined"
-          ? window.location.origin
-          : "";
+      setLoading(true);
+      setError("");
 
       const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
+        email,
         options: {
-          emailRedirectTo: `${origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (error) {
-        console.error("Register error:", error);
-        alert(error.message);
+        setError(error.message);
         return;
       }
 
-      alert("Check your email to complete registration ✉️");
-
-      setEmail("");
-
       router.push("/auth/check-email");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
 
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      alert("Something went wrong. Please try again.");
+      setError(message);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#050816] text-white px-6">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center text-white">
+      <div className="w-[400px]">
 
-        <h1 className="text-4xl font-bold text-center mb-2">
-          Create Account
+        <h1 className="text-2xl font-bold mb-4">
+          Welcome back to Adsphere
         </h1>
 
-        <p className="text-center text-white/50 mb-6">
-          Join AdSphere marketplace
-        </p>
+        <input
+          className="w-full p-3 bg-black/40 border border-white/10 rounded"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-        <div className="bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur">
+        {error && (
+          <p className="text-red-400 text-sm mt-2">{error}</p>
+        )}
 
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="
-              w-full p-3 rounded-lg mb-4
-              bg-black/40 border border-white/10
-              outline-none focus:border-blue-500
-            "
-          />
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full mt-4 bg-blue-600 p-3 rounded"
+        >
+          {loading ? "Sending..." : "Send Magic Link"}
+        </button>
 
-          <Button
-            onClick={handleRegister}
-            disabled={loading || !email.trim()}
-            className="w-full"
-          >
-            {loading ? "Creating Account..." : "Create Account"}
-          </Button>
-
-          <p className="text-xs text-white/40 text-center mt-4">
-            We’ll send you a secure signup link to your email
-          </p>
-
-        </div>
       </div>
-    </main>
+    </div>
   );
 }

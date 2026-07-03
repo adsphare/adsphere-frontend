@@ -45,3 +45,8 @@ export default function ChartCard({ title, data, dataKey }: Props) {
     </div>
   );
 }
+
+
+
+
+

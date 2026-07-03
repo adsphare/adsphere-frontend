@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+
+const supabase = createBrowserSupabase(); // ✅ FIX
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -13,23 +15,47 @@ export default function SettingsPage() {
   }, []);
 
   async function load() {
-    const { data } = await supabase.from("settings").select("*");
+    try {
+      setLoading(true);
 
-    data?.forEach((s) => {
-      if (s.key === "boost_basic") setBasic(s.value);
-      if (s.key === "boost_premium") setPremium(s.value);
-    });
+      const { data, error } = await supabase
+        .from("settings")
+        .select("*");
 
-    setLoading(false);
+      if (error) {
+        console.error("Settings load error:", error.message);
+        return;
+      }
+
+      data?.forEach((s: any) => {
+        if (s.key === "boost_basic") setBasic(s.value);
+        if (s.key === "boost_premium") setPremium(s.value);
+      });
+    } catch (err: unknown) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function save() {
-    await supabase.from("settings").upsert([
-      { key: "boost_basic", value: basic },
-      { key: "boost_premium", value: premium },
-    ]);
+    try {
+      const { error } = await supabase.from("settings").upsert([
+        { key: "boost_basic", value: basic },
+        { key: "boost_premium", value: premium },
+      ]);
 
-    alert("Settings saved");
+      if (error) {
+        console.error("Save error:", error.message);
+        alert(error.message);
+        return;
+      }
+
+      alert("Settings saved");
+    } catch (err: unknown) {
+      console.error(err);
+      alert("Something went wrong");
+    }
   }
 
   if (loading) {
@@ -48,7 +74,10 @@ export default function SettingsPage() {
       <div className="max-w-md space-y-4">
 
         <div>
-          <label className="text-white/60 text-sm">Basic Boost Price</label>
+          <label className="text-white/60 text-sm">
+            Basic Boost Price
+          </label>
+
           <input
             value={basic}
             onChange={(e) => setBasic(e.target.value)}
@@ -57,7 +86,10 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <label className="text-white/60 text-sm">Premium Boost Price</label>
+          <label className="text-white/60 text-sm">
+            Premium Boost Price
+          </label>
+
           <input
             value={premium}
             onChange={(e) => setPremium(e.target.value)}

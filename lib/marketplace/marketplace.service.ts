@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
-import { rankingService } from "@/lib/ranking/ranking.service";
+import { createServerSupabase } from "@/lib/supabase/server";
+import { calculateRank } from "@/lib/ranking/rank";
 import { analyticsService } from "@/lib/analytics/analytics.service";
 
 export type MarketplaceFilter = {
@@ -14,11 +14,8 @@ export const marketplaceService = {
      GET MARKETPLACE FEED
   ========================= */
   async getFeed(filter?: MarketplaceFilter) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
-    /* -------------------------
-       1. FETCH LISTINGS
-    ------------------------- */
     let query = supabase
       .from("listings")
       .select(`
@@ -53,13 +50,12 @@ export const marketplaceService = {
       throw new Error(error.message);
     }
 
-    /* -------------------------
-       2. RANK + ANALYTICS
-    ------------------------- */
+    const listings = data ?? [];
+
     const ranked = await Promise.all(
-      (data || []).map(async (listing) => {
+      listings.map(async (listing: any) => {
         const [rankingResult, stats] = await Promise.all([
-          rankingService.calculateScore({
+          calculateRank({
             listingId: listing.id,
             listing,
           }),
@@ -68,23 +64,22 @@ export const marketplaceService = {
 
         return {
           ...listing,
-          rank_score: rankingResult.score,
+          rank_score: rankingResult ?? 0,
           analytics: stats,
         };
       })
     );
 
-    /* -------------------------
-       3. SORT FEED
-    ------------------------- */
-    return ranked.sort((a, b) => b.rank_score - a.rank_score);
+    return ranked.sort(
+      (a, b) => (b.rank_score ?? 0) - (a.rank_score ?? 0)
+    );
   },
 
   /* =========================
      GET SINGLE LISTING
   ========================= */
   async getListing(id: string) {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
     const { data, error } = await supabase
       .from("listings")
@@ -107,3 +102,8 @@ export const marketplaceService = {
     };
   },
 };
+
+
+
+
+

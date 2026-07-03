@@ -1,124 +1,58 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
-import PaymentModal from "./PaymentModal";
 
-type PaymentMethod = "chapa" | "stripe";
-
-interface Props {
+type CreateCampaignButtonProps = {
   listingId: string;
-}
+};
 
-export default function CreateCampaignButton({ listingId }: Props) {
+export default function CreateCampaignButton({
+  listingId,
+}: CreateCampaignButtonProps) {
+  const router = useRouter();
+  const supabase = createBrowserSupabase();
+
   const [loading, setLoading] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  async function createCampaign(method: PaymentMethod) {
-    setLoading(true);
-    setShowPaymentModal(false);
-
+  const handleClick = async () => {
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData?.user;
+      setLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
-        alert("Please login first");
-        setLoading(false);
+        router.push("/auth/login");
         return;
       }
 
-      const { data: campaign, error } = await supabase
-        .from("campaigns")
-        .insert({
-          user_id: user.id,
-          listing_id: listingId,
-          title: "Boost Campaign",
-          budget: 10,
-          status: "pending",
-          payment_status: "pending",
-          payment_method: method,
-        })
-        .select()
-        .single();
-
-      if (error || !campaign) {
-        console.log(error);
-        alert("Failed to create campaign");
-        setLoading(false);
-        return;
-      }
-
-      // CHAPA
-      if (method === "chapa") {
-        const res = await fetch("/api/chapa/initialize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            campaignId: campaign.id,
-            amount: 10,
-            email: user.email,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || !data.checkout_url) {
-          alert("Chapa payment failed");
-          setLoading(false);
-          return;
-        }
-
-        window.location.href = data.checkout_url;
-        return;
-      }
-
-      // STRIPE
-      if (method === "stripe") {
-        const res = await fetch("/api/stripe/campaign-checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            campaignId: campaign.id,
-            listingId,
-            budget: 10,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || !data.url) {
-          alert("Stripe checkout failed");
-          setLoading(false);
-          return;
-        }
-
-        window.location.href = data.url;
-        return;
-      }
+      router.push(`/campaigns/create?listing=${listingId}`);
     } catch (err) {
-      console.log(err);
-      alert("Something went wrong");
+      console.error("Create campaign error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-  }
+  };
 
   return (
-    <>
-      <button
-        onClick={() => setShowPaymentModal(true)}
-        disabled={loading}
-        className="px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-500 transition"
-      >
-        {loading ? "Processing..." : "🚀 Boost Campaign"}
-      </button>
-
-      <PaymentModal
-        open={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onSelect={(method) => createCampaign(method)}
-      />
-    </>
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="
+        px-4 py-2
+        rounded-lg
+        bg-blue-600
+        hover:bg-blue-700
+        text-white
+        font-medium
+        transition
+        disabled:opacity-50
+      "
+    >
+      {loading ? "Loading..." : "Create Campaign"}
+    </button>
   );
 }

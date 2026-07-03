@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export async function requireAdmin() {
-  const supabase = await createClient();
+  const supabase = createServerSupabase();
 
   const {
     data: { user },
@@ -12,15 +12,20 @@ export async function requireAdmin() {
     redirect("/auth");
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("users")
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "admin") {
+  if (error || !profile || profile.role !== "admin") {
     redirect("/");
   }
 
   return user;
 }
+
+
+
+
+

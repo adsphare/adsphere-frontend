@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export type BoostPlan = "basic" | "pro" | "premium";
 
@@ -9,43 +9,28 @@ type BoostConfig = {
 };
 
 const BOOST_PLANS: Record<BoostPlan, BoostConfig> = {
-  basic: {
-    score: 100,
-    multiplier: 1.2,
-    durationDays: 5,
-  },
-  pro: {
-    score: 250,
-    multiplier: 1.8,
-    durationDays: 10,
-  },
-  premium: {
-    score: 600,
-    multiplier: 2.5,
-    durationDays: 20,
-  },
+  basic: { score: 100, multiplier: 1.2, durationDays: 5 },
+  pro: { score: 250, multiplier: 1.8, durationDays: 10 },
+  premium: { score: 600, multiplier: 2.5, durationDays: 20 },
 };
 
-/* =========================
-   BOOST DOMAIN SERVICE
-========================= */
 export const boostService = {
-  /* -------------------------
+  /* =========================
      ACTIVATE BOOST
-  ------------------------- */
-  async activate(input: {
-    listingId: string;
-    plan: BoostPlan;
-  }) {
-    const supabase = await createClient();
+  ========================= */
+  async activate(input: { listingId: string; plan: BoostPlan }) {
+    const supabase = createServerSupabase();
+
     const config = BOOST_PLANS[input.plan];
+
+    if (!config) throw new Error("Invalid boost plan");
 
     const now = new Date();
     const expiresAt = new Date(
       now.getTime() + config.durationDays * 24 * 60 * 60 * 1000
     );
 
-    // 1. Create boost record
+    // 1. create boost
     const { data, error } = await supabase
       .from("boosts")
       .insert({
@@ -62,8 +47,8 @@ export const boostService = {
 
     if (error) throw new Error(error.message);
 
-    // 2. Update listing boost state
-    await supabase
+    // 2. update listing
+    const { error: listingError } = await supabase
       .from("listings")
       .update({
         is_boosted: true,
@@ -72,6 +57,8 @@ export const boostService = {
       })
       .eq("id", input.listingId);
 
+    if (listingError) throw new Error(listingError.message);
+
     return {
       success: true,
       boostId: data.id,
@@ -79,21 +66,19 @@ export const boostService = {
     };
   },
 
-  /* -------------------------
-     EXPIRE BOOSTS (CRON JOB)
-  ------------------------- */
+  /* =========================
+     EXPIRE BOOSTS
+  ========================= */
   async expire() {
-    const supabase = await createClient();
+    const supabase = createServerSupabase();
 
     const now = new Date().toISOString();
 
-    const { error } = await supabase
+    await supabase
       .from("boosts")
       .update({ status: "expired" })
       .lt("expires_at", now)
       .eq("status", "active");
-
-    if (error) throw new Error(error.message);
 
     await supabase
       .from("listings")
@@ -106,3 +91,8 @@ export const boostService = {
     return { success: true };
   },
 };
+
+
+
+
+
