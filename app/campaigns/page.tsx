@@ -8,7 +8,7 @@ export default async function CampaignPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) redirect("/auth/login");
 
   const { data: campaigns } = await supabase
     .from("campaigns")
@@ -41,6 +41,7 @@ export default async function CampaignPage() {
     </div>
   );
 }
+
 
 
 

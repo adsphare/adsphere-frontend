@@ -8,19 +8,20 @@ type Listing = {
   id: string;
   title: string;
   location: string;
-  price: string;
-  description?: string;
+  price: number | null;
+  description: string | null;
+  created_at: string;
 };
 
 export default function ListingsPage() {
   const router = useRouter();
-  const supabase = createBrowserSupabase(); // ✅ FIX
+  const supabase = createBrowserSupabase();
 
   const [listings, setListings] = useState<Listing[]>([]);
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [open, setOpen] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -30,11 +31,11 @@ export default function ListingsPage() {
   });
 
   useEffect(() => {
-    fetchListings();
+    loadListings();
   }, []);
 
-  async function fetchListings() {
-    setFetching(true);
+  async function loadListings() {
+    setLoading(true);
     setError(null);
 
     const { data, error } = await supabase
@@ -43,51 +44,48 @@ export default function ListingsPage() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error(error);
       setError(error.message);
-      setFetching(false);
+      setLoading(false);
       return;
     }
 
-    setListings(data ?? []);
-    setFetching(false);
+    setListings((data as Listing[]) || []);
+    setLoading(false);
   }
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   }
 
   async function createListing() {
-    setLoading(true);
     setError(null);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData.user;
 
     if (!user) {
       alert("Please login first");
-      setLoading(false);
       return;
     }
 
     const { error } = await supabase.from("listings").insert({
       title: form.title,
       location: form.location,
-      price: form.price,
+      price: form.price ? Number(form.price) : null,
       description: form.description,
       user_id: user.id,
     });
 
     if (error) {
       setError(error.message);
-      setLoading(false);
       return;
     }
 
-    setOpen(false);
     setForm({
       title: "",
       location: "",
@@ -95,69 +93,74 @@ export default function ListingsPage() {
       description: "",
     });
 
-    await fetchListings();
-    setLoading(false);
+    setOpen(false);
+    loadListings();
   }
 
   return (
     <main className="min-h-screen bg-[#050816] text-white p-8">
 
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">My Listings</h1>
+        <h1 className="text-3xl font-bold">Listings</h1>
 
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => setOpen(!open)}
           className="px-4 py-2 bg-blue-600 rounded-lg"
         >
           + Create Listing
         </button>
       </div>
 
+      {/* ERROR */}
       {error && (
         <div className="mb-4 p-3 bg-red-500/20 text-red-300 rounded">
           {error}
         </div>
       )}
 
+      {/* FORM */}
       {open && (
-        <div className="mb-8 p-6 bg-white/5 border border-white/10 rounded-xl space-y-3">
+        <div className="mb-6 p-4 bg-white/5 border border-white/10 rounded-lg space-y-3">
 
           <input
             name="title"
             placeholder="Title"
-            className="w-full p-2 bg-black/40 rounded"
+            value={form.title}
             onChange={handleChange}
+            className="w-full p-2 bg-black/40 rounded"
           />
 
           <input
             name="location"
             placeholder="Location"
-            className="w-full p-2 bg-black/40 rounded"
+            value={form.location}
             onChange={handleChange}
+            className="w-full p-2 bg-black/40 rounded"
           />
 
           <input
             name="price"
             placeholder="Price"
-            className="w-full p-2 bg-black/40 rounded"
+            value={form.price}
             onChange={handleChange}
+            className="w-full p-2 bg-black/40 rounded"
           />
 
           <textarea
             name="description"
             placeholder="Description"
-            className="w-full p-2 bg-black/40 rounded"
+            value={form.description}
             onChange={handleChange}
+            className="w-full p-2 bg-black/40 rounded"
           />
 
           <div className="flex gap-3">
-
             <button
               onClick={createListing}
-              disabled={loading}
               className="px-4 py-2 bg-green-600 rounded-lg"
             >
-              {loading ? "Creating..." : "Create"}
+              Create
             </button>
 
             <button
@@ -166,41 +169,36 @@ export default function ListingsPage() {
             >
               Cancel
             </button>
-
           </div>
-
         </div>
       )}
 
-      {fetching ? (
-        <p className="text-white/40">Loading listings...</p>
+      {/* LISTINGS */}
+      {loading ? (
+        <p className="text-white/50">Loading listings...</p>
       ) : listings.length === 0 ? (
-        <div className="text-center py-20">
-          <h2 className="text-xl font-semibold">No listings yet</h2>
-        </div>
+        <p className="text-white/40">No listings found</p>
       ) : (
         <div className="grid md:grid-cols-3 gap-4">
-
           {listings.map((l) => (
             <div
               key={l.id}
-              className="p-4 border border-white/10 rounded-xl bg-white/5"
+              className="p-4 bg-white/5 border border-white/10 rounded-lg"
             >
               <h2 className="font-semibold">{l.title}</h2>
 
-              <p className="text-white/40 text-sm mt-1">
+              <p className="text-white/50 text-sm mt-1">
                 📍 {l.location}
               </p>
 
               <p className="text-blue-400 mt-2">
-                {l.price}
+                {l.price ? `$${l.price}` : "No price"}
               </p>
 
               <div className="flex gap-2 mt-4">
-
                 <button
                   onClick={() => router.push(`/listings/${l.id}`)}
-                  className="flex-1 px-3 py-2 bg-white/10 rounded-lg"
+                  className="flex-1 px-3 py-2 bg-white/10 rounded"
                 >
                   View
                 </button>
@@ -209,19 +207,15 @@ export default function ListingsPage() {
                   onClick={() =>
                     router.push(`/messages/new?listing=${l.id}`)
                   }
-                  className="flex-1 px-3 py-2 bg-blue-600 rounded-lg"
+                  className="flex-1 px-3 py-2 bg-blue-600 rounded"
                 >
-                  💬 Chat
+                  Chat
                 </button>
-
               </div>
-
             </div>
           ))}
-
         </div>
       )}
-
     </main>
   );
 }

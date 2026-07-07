@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { db } from "@/lib/core/db";
 import { subscribeNotifications } from "@/lib/core/notifications/realtime";
 import type { Notification } from "@/lib/core/notifications/types";
 
@@ -171,3 +170,4 @@ export default function NotificationBell() {
     </div>
   );
 }
+

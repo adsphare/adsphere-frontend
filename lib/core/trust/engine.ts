@@ -19,3 +19,4 @@ export function calculateTrust(profile: TrustProfile): TrustProfile {
     score,
   };
 }
+

@@ -44,3 +44,4 @@ eventBus.on(async (event) => {
     await trustScore.increase(data.receiverId, 2);
   }
 });
+

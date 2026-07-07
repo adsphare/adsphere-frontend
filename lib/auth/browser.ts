@@ -9,3 +9,4 @@ export async function getUser() {
     user: error ? null : data.user,
   };
 }
+

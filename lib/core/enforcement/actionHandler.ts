@@ -7,3 +7,4 @@ export function handleEnforcement(decision: any, context: any) {
 
   return true;
 }
+

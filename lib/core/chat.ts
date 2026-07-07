@@ -5,10 +5,28 @@ import { evaluateMessage } from "@/lib/core/enforcement/policyEngine";
 import { handleEnforcement } from "@/lib/core/enforcement/actionHandler";
 
 /* =========================
-   CHAT CORE SERVICE
+   TYPES
 ========================= */
-export const chat = {
 
+export type Message = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+};
+
+type MessagePreview = {
+  id: string;
+  sender_id: string;
+  created_at: string;
+};
+
+/* =========================
+   CHAT SERVICE
+========================= */
+
+export const chat = {
   /* =========================
      GET USER
   ========================= */
@@ -42,11 +60,12 @@ export const chat = {
       .order("created_at", { ascending: true });
 
     if (error) throw new Error(error.message);
-    return data || [];
+
+    return (data ?? []) as Message[];
   },
 
   /* =========================
-     INBOX
+     GET INBOX
   ========================= */
   async getInbox(userId: string) {
     const { data, error } = await db
@@ -56,12 +75,12 @@ export const chat = {
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
-    return data || [];
+
+    return data ?? [];
   },
 
   /* =========================
-     MARK AS READ (FIXED)
-     ✔ supports analytics + trust tracking
+     MARK AS READ
   ========================= */
   async markAsRead(conversationId: string, userId: string) {
     const { error } = await db
@@ -76,15 +95,14 @@ export const chat = {
   },
 
   /* =========================
-     UNREAD COUNT
+     UNREAD COUNT (FIXED TYPES)
   ========================= */
   async getUnreadCount(conversationId: string, userId: string) {
     const { data: messages, error } = await db
       .from("messages")
       .select("id, sender_id, created_at")
       .eq("conversation_id", conversationId)
-      .neq("sender_id", userId)
-      .order("created_at", { ascending: false });
+      .neq("sender_id", userId);
 
     if (error) throw new Error(error.message);
 
@@ -94,13 +112,16 @@ export const chat = {
       .eq("id", conversationId)
       .single();
 
-    if (!convo?.last_read_at) return messages?.length || 0;
+    const msgList: MessagePreview[] = (messages || []) as MessagePreview[];
 
-    const unread = (messages || []).filter(
-      (m) =>
+    if (!convo?.last_read_at) return msgList.length;
+
+    const unread = msgList.filter((m) => {
+      return (
         new Date(m.created_at).getTime() >
         new Date(convo.last_read_at).getTime()
-    );
+      );
+    });
 
     return unread.length;
   },
@@ -117,7 +138,6 @@ export const chat = {
     senderId: string;
     content: string;
   }) {
-
     // 1. LOAD CONVERSATION
     const { data: convo, error: convoError } = await db
       .from("conversations")
@@ -131,11 +151,9 @@ export const chat = {
 
     // 2. DETERMINE RECEIVER
     const receiverId =
-      senderId === convo.buyer_id
-        ? convo.seller_id
-        : convo.buyer_id;
+      senderId === convo.buyer_id ? convo.seller_id : convo.buyer_id;
 
-    // 3. POLICY CHECK (TRUST + SAFETY)
+    // 3. POLICY CHECK
     const decision = await evaluateMessage({
       userId: senderId,
       conversationId,
@@ -167,7 +185,7 @@ export const chat = {
 
     if (error) throw new Error(error.message);
 
-    // 5. EVENT SYSTEM (REALTIME + NOTIFICATIONS)
+    // 5. EVENT SYSTEM
     eventBus.emit({
       type: "message_sent",
       data: {
@@ -185,7 +203,7 @@ export const chat = {
   /* =========================
      REALTIME SUBSCRIPTION
   ========================= */
-  subscribe(conversationId: string, callback: (msg: any) => void) {
+  subscribe(conversationId: string, callback: (msg: Message) => void) {
     const channel = db
       .channel(`chat-${conversationId}`)
       .on(
@@ -196,8 +214,8 @@ export const chat = {
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
-          callback(payload.new);
+        (payload: any) => {
+          callback(payload.new as Message);
         }
       )
       .subscribe();

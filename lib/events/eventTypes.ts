@@ -72,3 +72,4 @@ export interface AppEvent {
     meta?: Record<string, any>;
   };
 }
+

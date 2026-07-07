@@ -30,3 +30,4 @@ export function contactRule(content: string): boolean {
 
   return patterns.some((regex) => regex.test(content));
 }
+

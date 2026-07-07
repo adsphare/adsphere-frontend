@@ -19,11 +19,9 @@ if (!process.env.STRIPE_WEBHOOK_SECRET) {
 }
 
 /* =========================
-   STRIPE INIT (FIXED)
+   STRIPE INIT
 ========================= */
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2026-05-27.dahlia",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /* =========================
    TYPES
@@ -31,7 +29,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 type MetaType = "escrow" | "agreement" | "boost";
 
 /* =========================
-   MAIN WEBHOOK
+   WEBHOOK
 ========================= */
 export async function POST(req: Request) {
   try {
@@ -46,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     /* =========================
-       VERIFY STRIPE EVENT
+       VERIFY EVENT
     ========================= */
     let event: Stripe.Event;
 
@@ -56,18 +54,18 @@ export async function POST(req: Request) {
         signature,
         process.env.STRIPE_WEBHOOK_SECRET!
       );
-    } catch {
+    } catch (err) {
       return NextResponse.json(
         { error: "Invalid signature" },
         { status: 400 }
       );
     }
 
-    /* =========================
-       IDEMPOTENCY GUARD
-    ========================= */
     const eventId = event.id;
 
+    /* =========================
+       IDEMPOTENCY CHECK
+    ========================= */
     const { data: existing } = await supabaseAdmin
       .from("stripe_events")
       .select("id")
@@ -75,17 +73,17 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (existing) {
-      console.log("Duplicate webhook ignored:", eventId);
       return NextResponse.json({ received: true });
     }
 
     await supabaseAdmin.from("stripe_events").insert({
       id: eventId,
       type: event.type,
+      created_at: new Date().toISOString(),
     });
 
     /* =========================
-       ONLY SUCCESSFUL CHECKOUTS
+       CHECKOUT SUCCESS
     ========================= */
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -103,9 +101,9 @@ export async function POST(req: Request) {
           return NextResponse.json({ received: true });
         }
 
-        await escrowEngine("FUND", escrowId);
+        await escrowEngine("RELEASE", escrowId);
 
-        console.log("💰 ESCROW FUNDED:", escrowId);
+        console.log("💰 ESCROW RELEASED:", escrowId);
       }
 
       /* =========================
@@ -121,7 +119,7 @@ export async function POST(req: Request) {
 
         await agreementEngine("ACCEPT", agreementId);
 
-        console.log("📄 AGREEMENT ACTIVATED:", agreementId);
+        console.log("📄 AGREEMENT ACCEPTED:", agreementId);
       }
 
       /* =========================
@@ -148,23 +146,23 @@ export async function POST(req: Request) {
     }
 
     /* =========================
-       FAILURES
+       PAYMENT FAILED
     ========================= */
     if (event.type === "payment_intent.payment_failed") {
-      console.log("❌ Payment failed");
+      console.log("❌ Payment failed:", event.id);
     }
 
     /* =========================
-       REFUNDS
+       REFUND
     ========================= */
     if (event.type === "charge.refunded") {
       const charge = event.data.object as Stripe.Charge;
-      console.log("🔁 Refund processed:", charge.id);
+      console.log("🔁 Refund:", charge.id);
     }
 
     return NextResponse.json({ received: true });
   } catch (err: any) {
-    console.error("Webhook crash:", err.message);
+    console.error("Webhook error:", err.message);
 
     return NextResponse.json(
       { error: "Webhook failed" },

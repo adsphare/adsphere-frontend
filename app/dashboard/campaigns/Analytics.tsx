@@ -22,7 +22,7 @@ export default function AnalyticsPage() {
     const user = data?.user;
 
     if (!user) {
-      window.location.href = "/login";
+      window.location.href = "/auth/login";
       return;
     }
 
@@ -165,3 +165,4 @@ function Stat({
     </div>
   );
 }
+

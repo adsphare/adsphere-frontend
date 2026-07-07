@@ -1,4 +1,3 @@
-import { db } from "@/lib/core/db";
 
 export const presence = {
   async setOnline(userId: string) {
@@ -28,3 +27,4 @@ export const presence = {
     });
   },
 };
+

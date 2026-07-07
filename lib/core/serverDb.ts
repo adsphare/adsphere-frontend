@@ -5,3 +5,4 @@ import { createServerSupabase } from "@/lib/supabase/server";
 ========================= */
 
 export const serverDb = createServerSupabase;
+

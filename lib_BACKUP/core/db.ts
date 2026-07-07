@@ -4,4 +4,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
    CLIENT DB
 ========================= */
 
-export const db = createBrowserSupabase();
+export function getDb() {
+  return createBrowserSupabase();
+}
+

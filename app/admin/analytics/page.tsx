@@ -31,9 +31,7 @@ export default async function Page() {
       </h1>
 
       {analytics.length === 0 ? (
-        <p className="text-white/40">
-          No analytics data found
-        </p>
+        <p className="text-white/40">No analytics data found</p>
       ) : (
         <div className="space-y-3">
           {analytics.map((item) => (
@@ -43,9 +41,7 @@ export default async function Page() {
             >
               <p className="font-semibold">
                 Plan:{" "}
-                <span className="text-blue-400">
-                  {item.plan}
-                </span>
+                <span className="text-blue-400">{item.plan}</span>
               </p>
 
               <p className="text-white/70">
@@ -70,8 +66,4 @@ export default async function Page() {
     </main>
   );
 }
-
-
-
-
 

@@ -38,3 +38,4 @@ export async function trackView(listingId: string) {
     console.error("trackView error:", err);
   }
 }
+

@@ -11,3 +11,4 @@ export default function SellerCard({ userId }: { userId: string }) {
     </div>
   );
 }
+

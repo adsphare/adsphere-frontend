@@ -28,3 +28,4 @@ export default function ChatWindow({ messages, userId }: Props) {
     </div>
   );
 }
+

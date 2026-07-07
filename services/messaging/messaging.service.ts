@@ -9,7 +9,7 @@ export async function getOrCreateConversation({
   buyerId: string;
   sellerId: string;
 }) {
-  const supabase = await createServerSupabase();
+  const supabase = createServerSupabase();
 
   const { data: existing } = await supabase
     .from("conversations")
@@ -37,7 +37,7 @@ export async function getOrCreateConversation({
 }
 
 export async function getMessages(conversationId: string) {
-  const supabase = await createServerSupabase();
+  const supabase = createServerSupabase();
 
   return supabase
     .from("messages")

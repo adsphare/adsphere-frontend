@@ -1,31 +1,34 @@
-import { createServerSupabase } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function requireAdmin() {
-  const supabase = createServerSupabase();
+type Profile = {
+  role: string;
+};
 
+export async function requireAdmin(supabase: SupabaseClient) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth");
+    redirect("/auth/login");
   }
 
   const { data: profile, error } = await supabase
-    .from("users")
+    .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (error || !profile || profile.role !== "admin") {
+  if (error || !profile) {
+    console.error("Profile error:", error?.message);
+    redirect("/");
+  }
+
+  if (profile.role !== "admin") {
     redirect("/");
   }
 
   return user;
 }
-
-
-
-
 

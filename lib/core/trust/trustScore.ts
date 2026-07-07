@@ -1,4 +1,3 @@
-import { db } from "@/lib/core/db";
 
 export type TrustEvent =
   | "message_sent"
@@ -99,3 +98,4 @@ export const trustScore = {
     }
   }
 };
+

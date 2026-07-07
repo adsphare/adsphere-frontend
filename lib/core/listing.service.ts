@@ -1,5 +1,4 @@
 import { marketplace } from "@/lib/core/marketplace";
-import { db } from "@/lib/core/db";
 
 export const listingService = {
   getAll() {
@@ -23,3 +22,4 @@ export const listingService = {
     return data?.user || null;
   },
 };
+

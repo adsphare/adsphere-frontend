@@ -2,23 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { listingRank } from "@/lib/core/ranking/listingRank";
+
+import {
+  getRankedListings,
+  Listing,
+} from "@/lib/core/ranking/listingRank";
+
 import { trustScore } from "@/lib/core/trust/trustScore";
 
-type Listing = {
-  id: string;
-  title: string;
-  location: string;
-  created_at: string;
-  owner_id: string;
-  views?: number;
-  likes?: number;
-  rank?: number;
-};
+type RankedListing = Listing & { rank: number };
 
 export default function MarketplacePage() {
   const router = useRouter();
-  const [listings, setListings] = useState<Listing[]>([]);
+
+  const [listings, setListings] = useState<RankedListing[]>([]);
   const [trustMap, setTrustMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
@@ -30,25 +27,25 @@ export default function MarketplacePage() {
     setLoading(true);
 
     try {
-      const data = await listingRank.getRankedListings();
+      const data = await getRankedListings();
       setListings(data);
 
-      // 🧠 preload trust scores for all owners (OPTIMIZED UI LAYER)
       const trustResults = await Promise.all(
-        data.map(async (item) => ({
-          id: item.owner_id,
-          score: await trustScore.get(item.owner_id),
-        }))
+        data.map(async (item) => {
+          const score = await trustScore.get(item.owner_id);
+          return { id: item.owner_id, score };
+        })
       );
 
       const map: Record<string, number> = {};
-      trustResults.forEach((t) => {
+
+      for (const t of trustResults) {
         map[t.id] = t.score;
-      });
+      }
 
       setTrustMap(map);
     } catch (err) {
-      console.error(err);
+      console.error("Marketplace load error:", err);
     }
 
     setLoading(false);
@@ -64,21 +61,19 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-[#050816] text-white p-6">
 
-      {/* HEADER */}
       <h1 className="text-2xl font-bold mb-6">
         Marketplace
       </h1>
 
-      {/* LOADING */}
       {loading && (
-        <p className="text-white/50">Loading ranked listings...</p>
+        <p className="text-white/50">
+          Loading ranked listings...
+        </p>
       )}
 
-      {/* GRID */}
       <div className="grid md:grid-cols-3 gap-4">
         {listings.map((item) => {
           const trust = trustMap[item.owner_id] ?? 50;
-
           const isHighTrust = trust >= 80;
 
           return (
@@ -91,8 +86,6 @@ export default function MarketplacePage() {
                     : "border-white/10 bg-white/5"
                 }`}
             >
-
-              {/* TITLE + TRUST BADGE */}
               <h2 className="font-semibold flex items-center gap-2">
                 {item.title}
 
@@ -101,24 +94,18 @@ export default function MarketplacePage() {
                 </span>
               </h2>
 
-              {/* LOCATION */}
               <p className="text-white/60 text-sm">
                 {item.location}
               </p>
 
-              {/* TRUST SCORE */}
               <p className="text-xs mt-1 text-white/50">
                 Trust Score: {trust}/100
               </p>
 
-              {/* RANK SCORE */}
-              {item.rank && (
-                <p className="text-xs text-green-400 mt-1">
-                  Rank Score: {item.rank.toFixed(1)}
-                </p>
-              )}
+              <p className="text-xs text-green-400 mt-1">
+                Rank Score: {item.rank.toFixed(1)}
+              </p>
 
-              {/* VIEW BUTTON */}
               <button
                 onClick={() =>
                   router.push(`/marketplace/${item.id}`)

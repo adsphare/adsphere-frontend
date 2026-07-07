@@ -37,3 +37,4 @@ export function useTyping(userId: string, conversationId: string) {
     typingUsers,
   };
 }
+

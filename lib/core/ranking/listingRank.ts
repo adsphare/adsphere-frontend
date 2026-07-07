@@ -1,61 +1,61 @@
-import { trustScore } from "@/lib/core/trust/trustScore";
-import { db } from "@/lib/core/db";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-type Listing = {
+/* =========================
+   LISTING TYPE
+========================= */
+export type Listing = {
   id: string;
   owner_id: string;
+  title: string;
+  location: string;
   created_at: string;
+  boost_score?: number;
   views?: number;
-  likes?: number;
+  clicks?: number;
+  rank?: number;
 };
 
-export const listingRank = {
+/* =========================
+   CORE RANKING ENGINE
+========================= */
+export function rankListing(listing: Listing): number {
+  const now = Date.now();
 
-  /* =========================
-     CALCULATE SCORE
-  ========================= */
-  async calculate(listing: Listing) {
-    const trust = await trustScore.get(listing.owner_id);
+  const createdAt = new Date(listing.created_at).getTime();
+  const ageHours = (now - createdAt) / (1000 * 60 * 60);
 
-    const views = listing.views ?? 0;
-    const likes = listing.likes ?? 0;
+  // time decay
+  const timeScore = 100 / (1 + ageHours * 0.05);
 
-    const ageInHours =
-      (Date.now() - new Date(listing.created_at).getTime()) /
-      (1000 * 60 * 60);
+  // boost (safe cap)
+  const boostScore = Math.min(listing.boost_score || 0, 1000);
 
-    // decay over time
-    const recencyBoost = Math.max(0, 100 - ageInHours);
+  // engagement
+  const engagement =
+    (listing.views || 0) * 0.1 +
+    (listing.clicks || 0) * 3;
 
-    // engagement score
-    const engagement = views * 0.2 + likes * 1.5;
+  return timeScore + boostScore * 1.2 + engagement;
+}
 
-    // FINAL SCORE
-    const score =
-      trust * 1.5 +
-      engagement +
-      recencyBoost * 0.3;
+/* =========================
+   SERVER: GET RANKED LISTINGS
+========================= */
+export async function getRankedListings(): Promise<(Listing & { rank: number })[]> {
+  const supabase = createServerSupabase();
 
-    return score;
-  },
-
-  /* =========================
-     GET SORTED LISTINGS
-  ========================= */
-  async getRankedListings() {
-    const { data: listings } = await db
-      .from("listings")
-      .select("*");
-
-    if (!listings) return [];
-
-    const ranked = await Promise.all(
-      listings.map(async (l) => ({
-        ...l,
-        rank: await this.calculate(l),
-      }))
+  const { data, error } = await supabase
+    .from("listings")
+    .select(
+      "id, owner_id, title, location, created_at, boost_score, views, clicks"
     );
 
-    return ranked.sort((a, b) => b.rank - a.rank);
-  },
-};
+  if (error) throw new Error(error.message);
+
+  const ranked = (data || []).map((item: Listing) => ({
+    ...item,
+    rank: rankListing(item),
+  }));
+
+  return ranked.sort((a, b) => b.rank - a.rank);
+}

@@ -1,4 +1,3 @@
-import { db } from "@/lib/core/db";
 
 export const marketplace = {
   /* =========================
@@ -55,3 +54,4 @@ export const marketplace = {
     });
   },
 };
+

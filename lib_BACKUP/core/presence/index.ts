@@ -1,0 +1,31 @@
+import { db } from "@/lib/core/db";
+
+export const presence = {
+  async setOnline(userId: string) {
+    await db.from("user_presence").upsert({
+      user_id: userId,
+      status: "online",
+      last_seen: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  },
+
+  async setOffline(userId: string) {
+    await db.from("user_presence").upsert({
+      user_id: userId,
+      status: "offline",
+      last_seen: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  },
+
+  async heartbeat(userId: string) {
+    await db.from("user_presence").upsert({
+      user_id: userId,
+      status: "online",
+      last_seen: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  },
+};
+

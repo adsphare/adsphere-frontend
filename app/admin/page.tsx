@@ -25,7 +25,7 @@ async function requireAdmin(supabase: SupabaseClient) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
   const { data: profile, error } = await supabase
@@ -180,3 +180,4 @@ function AdminCard({
     </div>
   );
 }
+

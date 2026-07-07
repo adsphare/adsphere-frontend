@@ -28,3 +28,4 @@ export default function TrustBadge({ userId }: { userId: string }) {
     </div>
   );
 }
+

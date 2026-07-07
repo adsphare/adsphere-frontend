@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/lib/core/db";
 
 type NotificationItem = {
   id: string;
@@ -105,3 +104,4 @@ export default function NotificationsPage() {
     </div>
   );
 }
+

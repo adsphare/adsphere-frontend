@@ -1,4 +1,3 @@
-import { db } from "@/lib/core/db";
 
 export const presence = {
   /* =========================
@@ -43,3 +42,4 @@ export const presence = {
     };
   },
 };
+

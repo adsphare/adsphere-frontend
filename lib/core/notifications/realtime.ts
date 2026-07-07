@@ -1,4 +1,3 @@
-import { db } from "@/lib/core/db";
 
 export function subscribeNotifications(
   userId: string,
@@ -24,3 +23,4 @@ export function subscribeNotifications(
     db.removeChannel(channel);
   };
 }
+

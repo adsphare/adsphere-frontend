@@ -30,3 +30,4 @@ export async function ensureProfile(userId: string, email?: string) {
 
   return newProfile;
 }
+

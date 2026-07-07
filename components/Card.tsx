@@ -37,3 +37,4 @@ export default function Card({ item, onClick }: CardProps) {
     </div>
   );
 }
+

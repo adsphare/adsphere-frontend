@@ -49,3 +49,4 @@ export async function evaluateMessage(
   // HIGH TRUST
   return "ALLOW";
 }
+

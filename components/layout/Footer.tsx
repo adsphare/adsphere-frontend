@@ -57,7 +57,7 @@ export default function Footer() {
         <div>
           <h3 className="text-white font-semibold mb-3">Account</h3>
           <div className="space-y-2 text-sm">
-            <Link href="/login" className="hover:text-white">
+            <Link href="/auth/login" className="hover:text-white">
               Login
             </Link>
             <Link href="/dashboard/settings" className="hover:text-white">
@@ -76,6 +76,7 @@ export default function Footer() {
     </footer>
   );
 }
+
 
 
 

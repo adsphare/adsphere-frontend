@@ -11,7 +11,7 @@ export default async function AdminVerifications() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) redirect("/auth/login");
 
   /* =========================
      ROLE CHECK
@@ -59,6 +59,7 @@ export default async function AdminVerifications() {
     </div>
   );
 }
+
 
 
 

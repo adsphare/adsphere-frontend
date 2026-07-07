@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 import { chat } from "@/lib/core/chat";
-import { db } from "@/lib/core/db";
+import { db } from "@/lib/core/db/client";
 import { usePresence } from "@/lib/core/presence/usePresence";
 
 import MessageBubble from "@/components/chat/MessageBubble";
@@ -16,6 +16,13 @@ type Message = {
   sender_id: string;
   content: string;
   created_at: string;
+};
+
+type TypingPayload = {
+  payload?: {
+    userId?: string;
+    conversationId?: string;
+  };
 };
 
 export default function ChatPage() {
@@ -38,8 +45,7 @@ export default function ChatPage() {
   }, []);
 
   /* =========================
-     PRESENCE SYSTEM (FIXED)
-     - safe null handling
+     PRESENCE SYSTEM
   ========================= */
   usePresence(userId ?? null);
 
@@ -61,7 +67,7 @@ export default function ChatPage() {
 
     loadMessages();
 
-    const unsubscribe = chat.subscribe(conversationId, (msg) => {
+    const unsubscribe = chat.subscribe(conversationId, (msg: Message) => {
       setMessages((prev) => {
         const exists = prev.some((m) => m.id === msg.id);
         if (exists) return prev;
@@ -82,7 +88,7 @@ export default function ChatPage() {
   }, [conversationId, userId]);
 
   /* =========================
-     TYPING SYSTEM (FIXED SUPABASE)
+     TYPING SYSTEM (FIXED)
   ========================= */
   useEffect(() => {
     if (!conversationId || !userId) return;
@@ -91,22 +97,26 @@ export default function ChatPage() {
     typingChannelRef.current = channel;
 
     channel
-      .on("broadcast", { event: "typing" }, (payload) => {
-        const senderId = payload.payload?.userId;
+      .on(
+        "broadcast",
+        { event: "typing" },
+        (payload: TypingPayload) => {
+          const senderId = payload.payload?.userId;
 
-        if (!senderId || senderId === userId) return;
+          if (!senderId || senderId === userId) return;
 
-        setTypingUsers((prev) => {
-          if (prev.includes(senderId)) return prev;
-          return [...prev, senderId];
-        });
+          setTypingUsers((prev) => {
+            if (prev.includes(senderId)) return prev;
+            return [...prev, senderId];
+          });
 
-        setTimeout(() => {
-          setTypingUsers((prev) =>
-            prev.filter((id) => id !== senderId)
-          );
-        }, 2000);
-      })
+          setTimeout(() => {
+            setTypingUsers((prev) =>
+              prev.filter((id) => id !== senderId)
+            );
+          }, 2000);
+        }
+      )
       .subscribe();
 
     return () => {
@@ -135,7 +145,7 @@ export default function ChatPage() {
   }
 
   /* =========================
-     SEND TYPING EVENT (FIXED)
+     SEND TYPING EVENT
   ========================= */
   function handleTyping() {
     if (!conversationId || !userId) return;

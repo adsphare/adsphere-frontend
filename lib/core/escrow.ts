@@ -1,8 +1,35 @@
 import { db } from "@/lib/core/db";
 
+/* =========================
+   TYPES
+========================= */
+
+export type EscrowStatus =
+  | "pending"
+  | "locked"
+  | "released"
+  | "cancelled";
+
+export type EscrowTransaction = {
+  id: string;
+  listing_id: string;
+  buyer_id: string;
+  seller_id: string;
+  amount: number;
+  status: EscrowStatus;
+  created_at: string;
+  locked_at?: string;
+  released_at?: string;
+  cancelled_at?: string;
+};
+
+/* =========================
+   ESCROW ENGINE
+========================= */
+
 export const escrow = {
   /* =========================
-     CREATE ESCROW TRANSACTION
+     CREATE TRANSACTION
   ========================= */
   async createTransaction({
     listingId,
@@ -29,7 +56,7 @@ export const escrow = {
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+    return data as EscrowTransaction;
   },
 
   /* =========================
@@ -43,46 +70,83 @@ export const escrow = {
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+    return data as EscrowTransaction;
   },
 
   /* =========================
-     RELEASE FUNDS (SELLER GETS PAID)
+     LOCK TRANSACTION
   ========================= */
-  async releaseFunds(transactionId: string) {
+  async lockTransaction(id: string) {
+    const tx = await this.getTransaction(id);
+
+    if (tx.status !== "pending") {
+      throw new Error("Only pending transactions can be locked");
+    }
+
+    const { data, error } = await db
+      .from("escrow_transactions")
+      .update({
+        status: "locked",
+        locked_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data as EscrowTransaction;
+  },
+
+  /* =========================
+     RELEASE FUNDS
+  ========================= */
+  async releaseFunds(id: string) {
+    const tx = await this.getTransaction(id);
+
+    if (tx.status !== "locked") {
+      throw new Error("Only locked transactions can be released");
+    }
+
     const { data, error } = await db
       .from("escrow_transactions")
       .update({
         status: "released",
         released_at: new Date().toISOString(),
       })
-      .eq("id", transactionId)
+      .eq("id", id)
       .select()
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+    return data as EscrowTransaction;
   },
 
   /* =========================
      CANCEL TRANSACTION
   ========================= */
-  async cancelTransaction(transactionId: string) {
+  async cancelTransaction(id: string) {
+    const tx = await this.getTransaction(id);
+
+    if (tx.status === "released") {
+      throw new Error("Cannot cancel released transaction");
+    }
+
     const { data, error } = await db
       .from("escrow_transactions")
       .update({
         status: "cancelled",
+        cancelled_at: new Date().toISOString(),
       })
-      .eq("id", transactionId)
+      .eq("id", id)
       .select()
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+    return data as EscrowTransaction;
   },
 
   /* =========================
-     LIST USER TRANSACTIONS
+     USER TRANSACTIONS
   ========================= */
   async getUserTransactions(userId: string) {
     const { data, error } = await db
@@ -92,6 +156,6 @@ export const escrow = {
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
-    return data || [];
+    return (data || []) as EscrowTransaction[];
   },
 };

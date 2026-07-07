@@ -10,20 +10,22 @@ type Listing = {
   id: string;
   title: string;
   location: string;
-  type?: string;
-  price?: number;
-  description?: string;
-  images?: string[];
-  metadata?: any;
+  type: string | null;
+  price: number | null;
+  description: string | null;
+  images: string[] | null;
+  metadata: Record<string, any> | null;
   user_id: string;
 };
 
 export default async function MarketplaceDetailPage({ params }: Props) {
-  const supabase = await createServerSupabase();
+  const supabase = createServerSupabase();
 
   const { data: listing, error } = await supabase
     .from("listings")
-    .select("*")
+    .select(
+      "id, title, location, type, price, description, images, metadata, user_id"
+    )
     .eq("id", params.id)
     .single();
 
@@ -31,7 +33,12 @@ export default async function MarketplaceDetailPage({ params }: Props) {
     notFound();
   }
 
-  const image = listing?.images?.[0];
+  const typedListing = listing as Listing;
+
+  const image =
+    Array.isArray(typedListing.images) && typedListing.images.length > 0
+      ? typedListing.images[0]
+      : null;
 
   return (
     <main className="min-h-screen bg-[#050816] text-white">
@@ -41,7 +48,7 @@ export default async function MarketplaceDetailPage({ params }: Props) {
         {image ? (
           <img
             src={image}
-            alt={listing.title}
+            alt={typedListing.title}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -57,34 +64,36 @@ export default async function MarketplaceDetailPage({ params }: Props) {
         {/* HEADER */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold">{listing.title}</h1>
+            <h1 className="text-3xl font-bold">
+              {typedListing.title}
+            </h1>
 
             <p className="text-white/40 mt-1">
-              📍 {listing.location}
+              📍 {typedListing.location}
             </p>
 
             <p className="text-sm text-white/30 mt-1">
-              Type: {listing.type || "N/A"}
+              Type: {typedListing.type ?? "N/A"}
             </p>
           </div>
 
           <div className="text-2xl font-bold text-green-400">
-            ${listing.price ?? 0}
+            ${typedListing.price ?? 0}
           </div>
         </div>
 
         {/* DESCRIPTION */}
         <p className="text-white/70 leading-relaxed">
-          {listing.description || "No description available."}
+          {typedListing.description ?? "No description available."}
         </p>
 
         {/* METADATA */}
-        {listing.metadata && (
+        {typedListing.metadata && (
           <div className="bg-white/5 border border-white/10 p-4 rounded-lg">
             <h3 className="font-semibold mb-2">Details</h3>
 
             <pre className="text-white/60 text-sm overflow-auto">
-              {JSON.stringify(listing.metadata, null, 2)}
+              {JSON.stringify(typedListing.metadata, null, 2)}
             </pre>
           </div>
         )}
@@ -93,8 +102,8 @@ export default async function MarketplaceDetailPage({ params }: Props) {
         <div className="pt-6 border-t border-white/10">
           <ChatButton
             listing={{
-              id: listing.id,
-              user_id: listing.user_id,
+              id: typedListing.id,
+              user_id: typedListing.user_id,
             }}
           />
         </div>

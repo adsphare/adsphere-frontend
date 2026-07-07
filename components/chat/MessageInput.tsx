@@ -39,3 +39,4 @@ export default function MessageInput({ onSend, onTyping }: Props) {
     </div>
   );
 }
+

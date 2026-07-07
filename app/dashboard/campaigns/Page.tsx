@@ -28,7 +28,7 @@ export default function CampaignsPage() {
     const user = data?.user;
 
     if (!user) {
-      window.location.href = "/login";
+      window.location.href = "/auth/login";
       return;
     }
 
@@ -264,3 +264,4 @@ export default function CampaignsPage() {
     </main>
   );
 }
+

@@ -5,7 +5,7 @@ export type Listing = {
   clicks?: number;
 };
 
-export function rankListing(listing: Listing) {
+export function rankListing(listing: Listing): number {
   const now = Date.now();
 
   const createdAt = listing.created_at
@@ -14,29 +14,18 @@ export function rankListing(listing: Listing) {
 
   const ageHours = (now - createdAt) / (1000 * 60 * 60);
 
-  // 🧠 1. TIME DECAY (bounded curve instead of linear drop)
+  // TIME DECAY
   const timeScore = 100 / (1 + ageHours * 0.05);
 
-  // 🚀 2. BOOST SCORE (capped to prevent abuse)
+  // BOOST (capped)
   const boostScore = Math.min(listing.boost_score || 0, 1000);
 
-  // 👁 3. ENGAGEMENT SIGNALS
+  // ENGAGEMENT
   const views = listing.views || 0;
   const clicks = listing.clicks || 0;
 
-  // clicks matter more than views (intent > exposure)
   const engagementScore = views * 0.1 + clicks * 3;
 
-  // 🧮 FINAL SCORE
-  const finalScore =
-    timeScore +
-    boostScore * 1.2 +
-    engagementScore;
-
-  return finalScore;
+  // FINAL
+  return timeScore + boostScore * 1.2 + engagementScore;
 }
-
-
-
-
-

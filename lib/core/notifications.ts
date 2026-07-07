@@ -1,4 +1,3 @@
-import { db } from "@/lib/core/db";
 
 export const notification = {
   /* =========================
@@ -75,3 +74,4 @@ export const notification = {
     if (error) throw new Error(error.message);
   },
 };
+

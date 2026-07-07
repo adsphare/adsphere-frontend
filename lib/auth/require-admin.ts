@@ -11,7 +11,7 @@ export async function requireAdmin() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
   // 2. Get role from DB (secure source of truth)
@@ -32,6 +32,7 @@ export async function requireAdmin() {
     role: profile.role,
   };
 }
+
 
 
 

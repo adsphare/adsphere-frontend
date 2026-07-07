@@ -11,3 +11,4 @@ export type TrustProfile = {
   level: TrustLevel;
   violations: number;
 };
+

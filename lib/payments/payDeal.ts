@@ -63,3 +63,4 @@ export async function payDeal(input: PayDealInput) {
     ...safeResult,
   };
 }
+

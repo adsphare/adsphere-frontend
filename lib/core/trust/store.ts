@@ -1,4 +1,3 @@
-import { db } from "@/lib/core/db";
 import { TrustProfile } from "./types";
 
 export async function getTrust(userId: string): Promise<TrustProfile> {
@@ -10,3 +9,4 @@ export async function getTrust(userId: string): Promise<TrustProfile> {
 
   return data;
 }
+

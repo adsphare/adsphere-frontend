@@ -1,21 +1,12 @@
-import { AppEvent } from "@/lib/core/events";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-type Listener = (event: AppEvent) => void;
-
-class EventBus {
-  private listeners: Listener[] = [];
-
-  on(listener: Listener) {
-    this.listeners.push(listener);
-
-    return () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
-    };
-  }
-
-  emit(event: AppEvent) {
-    this.listeners.forEach((listener) => listener(event));
-  }
-}
-
-export const eventBus = new EventBus();
+/**
+ * Unified DB access layer (MVP SAFE)
+ * - Server uses SSR client
+ * - Browser uses client
+ */
+export const db =
+  typeof window === "undefined"
+    ? createServerSupabase()
+    : createBrowserSupabase();

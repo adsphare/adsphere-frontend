@@ -45,3 +45,4 @@ export async function trackView(listingId: string, userId?: string) {
     console.error("trackView exception:", err);
   }
 }
+

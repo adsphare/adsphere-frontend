@@ -1,9 +1,8 @@
-
 import { createServerSupabase } from "@/lib/supabase/server";
-import { calculateRank } from "./rank";
+import { rankListing } from "./rankListing";
 
 export async function getRankedListings() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase(); // ✅ FIXED
 
   const { data, error } = await supabase
     .from("listings")
@@ -11,15 +10,10 @@ export async function getRankedListings() {
 
   if (error) throw new Error(error.message);
 
-  return (data || [])
-    .map((item) => ({
-      ...item,
-      rank: calculateRank(item),
-    }))
-    .sort((a, b) => b.rank - a.rank);
+  const ranked = (data || []).map((item: any) => ({
+    ...item,
+   rank: rankListing(item),
+  }));
+
+  return ranked.sort((a, b) => b.rank - a.rank);
 }
-
-
-
-
-

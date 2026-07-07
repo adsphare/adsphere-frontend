@@ -2,9 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export function createServerSupabase() {
-  const cookieStore = cookies() as unknown as {
-    getAll: () => { name: string; value: string }[];
-  };
+  const cookieStore = cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,9 +12,10 @@ export function createServerSupabase() {
         getAll() {
           return cookieStore.getAll();
         },
-
-        setAll() {
-          // Next.js 15 safe no-op
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
         },
       },
     }

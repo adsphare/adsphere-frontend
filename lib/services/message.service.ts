@@ -1,5 +1,4 @@
 import { chat } from "@/lib/core/chat";
-import { db } from "@/lib/core/db";
 
 export const messageService = {
   async load(conversationId: string) {
@@ -23,3 +22,4 @@ export const messageService = {
     return data?.user || null;
   },
 };
+

@@ -33,7 +33,7 @@ export default function BoostPage() {
     const user = data?.user;
 
     if (!user) {
-      window.location.href = "/login";
+      window.location.href = "/auth/login";
       return;
     }
 
@@ -144,3 +144,4 @@ export default function BoostPage() {
     </main>
   );
 }
+

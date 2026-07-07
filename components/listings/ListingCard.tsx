@@ -70,3 +70,4 @@ export default function ListingCard({ listing }: { listing: Listing }) {
     </div>
   );
 }
+

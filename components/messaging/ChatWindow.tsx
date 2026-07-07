@@ -14,3 +14,4 @@ export default function ChatWindow({ messages }: { messages: any[] }) {
     </div>
   );
 }
+

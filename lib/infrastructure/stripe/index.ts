@@ -7,3 +7,4 @@ if (!secretKey) {
 }
 
 export const stripe = new Stripe(secretKey);
+

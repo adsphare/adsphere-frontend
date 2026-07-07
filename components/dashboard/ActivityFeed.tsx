@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/lib/core/db";
 
 export default function ActivityPage() {
   const [events, setEvents] = useState<any[]>([]);
@@ -102,3 +101,4 @@ export default function ActivityPage() {
     </div>
   );
 }
+

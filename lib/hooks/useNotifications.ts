@@ -21,3 +21,4 @@ export const notificationService = {
     return true;
   },
 };
+
