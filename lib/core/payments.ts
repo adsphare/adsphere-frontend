@@ -16,7 +16,7 @@ export type PaymentStatus =
    CONFIG
 ========================= */
 
-const PLATFORM_FEE_RATE = 0.1; // 10% Adsphare commission
+const PLATFORM_FEE_RATE = 0.1; // 10% Adspheria commission
 
 /* =========================
    PAYMENT ENGINE

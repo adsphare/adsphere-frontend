@@ -1,12 +1,16 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
-import { createServerSupabase } from "@/lib/supabase/server";
 
 /**
- * EXPLICIT DB FACTORY (NO AUTO MAGIC)
- * You choose server or client intentionally
+ * Shared client database instance
+ *
+ * Used by:
+ * - chat
+ * - marketplace
+ * - notifications
+ * - trust
+ * - realtime
+ *
+ * Server-only code should use getServerDb()
  */
 
-export const db = {
-  server: createServerSupabase,
-  browser: createBrowserSupabase,
-};
+export const db = createBrowserSupabase();

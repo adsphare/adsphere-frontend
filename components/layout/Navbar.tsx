@@ -29,14 +29,14 @@ export default function Navbar() {
 
           <Image
             src="/logo.png"
-            alt="Adsphere"
+            alt="Adspheria"
             width={40}
             height={40}
             priority
           />
 
           <div className="leading-tight">
-            <h1 className="text-white font-bold text-lg">Adsphere</h1>
+            <h1 className="text-white font-bold text-lg">Adspheria</h1>
             <p className="text-[10px] text-white/40 uppercase tracking-widest">
               Visibility Network
             </p>

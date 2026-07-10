@@ -14,7 +14,7 @@ export default function Footer() {
           {/* BRAND */}
           <div>
             <h2 className="text-white font-semibold text-lg">
-              Adsphere
+              Adspheria
             </h2>
 
             <p className="text-sm text-white/40 mt-3 leading-relaxed">
@@ -89,7 +89,7 @@ export default function Footer() {
         <div className="mt-10 pt-6 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
 
           <p className="text-xs text-white/40">
-            © {new Date().getFullYear()} Adsphere. All rights reserved.
+            © {new Date().getFullYear()} Adspheria. All rights reserved.
           </p>
 
           <p className="text-xs text-white/30">

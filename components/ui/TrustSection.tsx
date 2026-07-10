@@ -15,7 +15,7 @@ export default function TrustSection() {
           </h2>
 
           <p className="text-gray-400 max-w-2xl mx-auto">
-            AdSphere protects advertisers, creators and billboard owners
+            Adspheria protects advertisers, creators and billboard owners
             through verification, trust scoring and fraud prevention.
           </p>
 

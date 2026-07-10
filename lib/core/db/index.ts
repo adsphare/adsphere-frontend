@@ -1,12 +1,5 @@
-import { createBrowserSupabase } from "@/lib/supabase/browser";
-import { createServerSupabase } from "@/lib/supabase/server";
+export { db } from "./db";
 
-/**
- * Unified DB layer (MVP SAFE)
- * - SSR on server
- * - browser on client
- */
-export const db =
-  typeof window === "undefined"
-    ? createServerSupabase()
-    : createBrowserSupabase();
+export { getBrowserDb } from "./browserDb";
+
+export { getServerDb } from "./serverDb";

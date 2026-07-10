@@ -5,62 +5,193 @@ import { useRouter } from "next/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+
   const router = useRouter();
 
-  // ✅ FIX: create supabase client
-  const supabase = useMemo(() => createBrowserSupabase(), []);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const supabase = useMemo(
+    () => createBrowserSupabase(),
+    []
+  );
+
 
   async function login() {
-    if (!email) {
-      alert("Please enter your email");
+
+    if (!email.trim()) {
+      setMessage("Enter your email");
       return;
     }
 
+
     try {
+
       setLoading(true);
+      setMessage("");
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
 
-      if (error) {
-        console.error("Login error:", error.message);
-        alert(error.message);
+      const { error } =
+        await supabase.auth.signInWithOtp({
+
+          email: email.trim(),
+
+          options: {
+
+            emailRedirectTo:
+              `${window.location.origin}/auth/callback`,
+
+          },
+
+        });
+
+
+      if(error){
+
+        console.error(
+          "MAGIC LINK ERROR:",
+          error.message
+        );
+
+        setMessage(error.message);
+
         return;
       }
 
-      router.push("/auth/check-email");
+
+      setMessage(
+        "Check your email for the login link"
+      );
+
+
+      router.push(
+        "/auth/check-email"
+      );
+
+
+    } catch(err){
+
+      console.error(
+        "LOGIN CRASH:",
+        err
+      );
+
+      setMessage(
+        "Something went wrong"
+      );
+
+
     } finally {
+
       setLoading(false);
+
     }
+
   }
 
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#050816] text-white">
-      <div className="p-6 bg-white/5 rounded-xl w-full max-w-md">
-        <h1 className="text-xl font-bold mb-4">Login</h1>
+
+    <div className="
+      min-h-screen
+      flex
+      items-center
+      justify-center
+      bg-[#050816]
+      text-white
+      px-6
+    ">
+
+
+      <div className="
+        w-full
+        max-w-md
+        p-8
+        bg-white/5
+        border
+        border-white/10
+        rounded-2xl
+      ">
+
+
+        <h1 className="
+          text-2xl
+          font-bold
+          mb-6
+        ">
+          Welcome back to Adspheria
+        </h1>
+
 
         <input
-          className="w-full p-2 text-black rounded"
-          placeholder="Email"
+
+          type="email"
+
+          className="
+            w-full
+            p-3
+            rounded-lg
+            text-black
+          "
+
+          placeholder="Enter your email"
+
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+
+          onChange={
+            e => setEmail(e.target.value)
+          }
+
         />
 
-        <button
-          onClick={login}
-          disabled={loading}
-          className="mt-4 w-full bg-blue-600 p-2 rounded"
-        >
-          {loading ? "Sending..." : "Send Magic Link"}
-        </button>
-      </div>
-    </div>
-  );
-}
 
+        {message && (
+
+          <p className="
+            mt-3
+            text-sm
+            text-blue-300
+          ">
+
+            {message}
+
+          </p>
+
+        )}
+
+
+        <button
+
+          onClick={login}
+
+          disabled={loading}
+
+          className="
+            mt-5
+            w-full
+            p-3
+            rounded-lg
+            bg-blue-600
+            hover:bg-blue-500
+          "
+
+        >
+
+          {
+            loading
+            ? "Sending..."
+            : "Send Magic Link"
+          }
+
+        </button>
+
+
+      </div>
+
+
+    </div>
+
+  );
+
+}

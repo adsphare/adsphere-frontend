@@ -10,7 +10,7 @@ type Props = {
 export default async function ProfilePage({ params }: Props) {
   const { id } = params;
 
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: profile } = await supabase
     .from("profiles")

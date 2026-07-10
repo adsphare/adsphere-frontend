@@ -24,7 +24,7 @@ export default function Sidebar() {
       ========================= */}
       <div className="px-5 py-6 border-b border-white/10">
         <h1 className="text-lg font-semibold text-blue-400 tracking-wide">
-          AdSphere
+          Adspheria
         </h1>
 
         <p className="text-xs text-white/30 mt-1">
@@ -63,7 +63,7 @@ export default function Sidebar() {
          FOOTER SECTION
       ========================= */}
       <div className="px-5 py-4 border-t border-white/10 text-xs text-white/30">
-        © {new Date().getFullYear()} AdSphere
+        © {new Date().getFullYear()} Adspheria
       </div>
 
     </aside>

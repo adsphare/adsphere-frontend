@@ -1,30 +1,40 @@
-import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-export async function ensureProfile(user: any) {
-  const supabase = createBrowserSupabase();
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
+export async function updateTrust(
+  userId: string,
+  trustScore: number
+) {
 
-  if (data) return data;
+  const supabase = await createServerSupabase();
 
-  const { data: created, error } = await supabase
-    .from("profiles")
-    .insert({
-      user_id: user.id,
-      username: user.email?.split("@")[0] ?? "user",
-      trust_score: 0,
-      total_sales: 0,
-      total_views: 0,
-    })
-    .select()
-    .single();
 
-  if (error) throw error;
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("profiles")
+      .update({
 
-  return created;
+        trust_score: trustScore,
+
+        last_active:
+          new Date().toISOString(),
+
+      })
+      .eq("id", userId)
+      .select()
+      .single();
+
+
+
+  if (error) {
+    throw error;
+  }
+
+
+
+  return data;
+
 }
-

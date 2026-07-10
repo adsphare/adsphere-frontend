@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 export async function uploadEvidence(file: File, disputeId: string) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   );
 
   const filePath = `disputes/${disputeId}/${Date.now()}-${file.name}`;

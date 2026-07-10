@@ -6,6 +6,8 @@ export type EventType =
   | "message_blocked"
   | "user_warned"
   | "user_reported"
+  | "dispute_won"
+  | "dispute_lost"
   | "moderation_required"
   | "notification_created";
 

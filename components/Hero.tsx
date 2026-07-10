@@ -38,7 +38,7 @@ export default function Hero() {
             </h1>
 
             <p className="mt-6 text-white/50 text-lg max-w-xl">
-              Adsphere turns physical spaces, creators, and digital screens into a unified marketplace for advertising visibility.
+              Adspheria turns physical spaces, creators, and digital screens into a unified marketplace for advertising visibility.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
@@ -79,7 +79,7 @@ export default function Hero() {
             <div className="relative z-10 animate-pulse">
               <Image
                 src="/logo.png"
-                alt="Adsphere"
+                alt="Adspheria"
                 width={220}
                 height={220}
                 priority

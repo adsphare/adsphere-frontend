@@ -11,7 +11,7 @@ export default function Footer() {
         {/* BRAND */}
         <div>
           <h2 className="text-white text-xl font-bold mb-3">
-            AdSphere 🚀
+            Adspheria 🚀
           </h2>
           <p className="text-sm">
             The future of advertising — digital + physical ad marketplace.
@@ -70,7 +70,7 @@ export default function Footer() {
 
       {/* BOTTOM BAR */}
       <div className="border-t border-white/10 text-center py-4 text-xs">
-        © {new Date().getFullYear()} AdSphere. All rights reserved.
+        © {new Date().getFullYear()} Adspheria. All rights reserved.
       </div>
 
     </footer>

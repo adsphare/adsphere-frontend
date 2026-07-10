@@ -108,8 +108,8 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           amount,
           currency: "ETB",
-          email: email || user.email || "user@adsphere.com",
-          first_name: "Adsphere",
+          email: email || user.email || "user@Adspheria.com",
+          first_name: "Adspheria",
           last_name: "User",
           tx_ref,
           callback_url: `${SITE_URL}/api/chapa/verify`,

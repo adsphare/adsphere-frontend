@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 import { chat } from "@/lib/core/chat";
-import { db } from "@/lib/core/db/client";
+import { db } from "@/lib/core/db";
 import { usePresence } from "@/lib/core/presence/usePresence";
 
 import MessageBubble from "@/components/chat/MessageBubble";

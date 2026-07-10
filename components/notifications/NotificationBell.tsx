@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { subscribeNotifications } from "@/lib/core/notifications/realtime";
 import type { Notification } from "@/lib/core/notifications/types";
-
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 export default function NotificationBell() {
+  const db = createBrowserSupabase();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>([]);
   const [userId, setUserId] = useState<string | null>(null);

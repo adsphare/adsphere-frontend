@@ -19,7 +19,7 @@ export default async function CampaignPage() {
     <div style={{ padding: 20 }}>
       <h1>📣 Campaigns</h1>
 
-      <p>Discover active brand campaigns on Adsphare</p>
+      <p>Discover active brand campaigns on Adspheria</p>
 
       <div style={{ marginTop: 20 }}>
         {campaigns?.map((c) => (

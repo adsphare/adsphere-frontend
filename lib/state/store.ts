@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 /**
- * AdSphere Global Store
+ * Adspheria Global Store
  * - user session
  * - selected listing
  * - UI state

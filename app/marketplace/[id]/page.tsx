@@ -2,113 +2,536 @@ import ChatButton from "@/components/ChatButton";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
+
 type Props = {
-  params: { id: string };
+  params: Promise<{
+    id: string;
+  }>;
 };
+
 
 type Listing = {
-  id: string;
-  title: string;
-  location: string;
-  type: string | null;
-  price: number | null;
-  description: string | null;
-  images: string[] | null;
-  metadata: Record<string, any> | null;
-  user_id: string;
+
+  id:string;
+
+  user_id:string;
+
+  title:string;
+
+  description:string | null;
+
+  location:string;
+
+  type:string | null;
+
+  price:number | null;
+
+  currency:string | null;
+
+  media:any;
+
+  dimensions:string | null;
+
+  boost_score:number | null;
+
+  boosted:boolean | null;
+
 };
 
-export default async function MarketplaceDetailPage({ params }: Props) {
-  const supabase = createServerSupabase();
 
-  const { data: listing, error } = await supabase
+
+
+export default async function MarketplaceDetailPage({
+  params,
+}:Props){
+
+
+  const {id} = await params;
+
+
+
+  const supabase =
+    await createServerSupabase();
+
+
+
+
+  const {
+    data:listing,
+    error
+  } = await supabase
+
     .from("listings")
+
     .select(
-      "id, title, location, type, price, description, images, metadata, user_id"
+      `
+      id,
+      user_id,
+      title,
+      description,
+      location,
+      type,
+      price,
+      currency,
+      media,
+      dimensions,
+      boost_score,
+      boosted
+      `
     )
-    .eq("id", params.id)
+
+    .eq(
+      "id",
+      id
+    )
+
     .single();
 
-  if (error || !listing) {
+
+
+
+  if(error || !listing){
+
     notFound();
+
   }
 
-  const typedListing = listing as Listing;
 
-  const image =
-    Array.isArray(typedListing.images) && typedListing.images.length > 0
-      ? typedListing.images[0]
-      : null;
+
+
+  const typedListing =
+    listing as Listing;
+
+
+
+
+
+  /*
+     MEDIA HANDLING
+
+     Supports:
+     [
+       "image1.jpg",
+       "image2.jpg"
+     ]
+
+     and future:
+     {
+       url:"..."
+     }
+  */
+
+  let image:string|null=null;
+
+
+
+  if(Array.isArray(typedListing.media)){
+
+    image =
+      typedListing.media[0] ?? null;
+
+  }
+
+
+  if(
+    typeof typedListing.media === "string"
+  ){
+
+    image =
+      typedListing.media;
+
+  }
+
+
+
+
+
 
   return (
-    <main className="min-h-screen bg-[#050816] text-white">
+
+    <main
+      className="
+      min-h-screen
+      bg-[#050816]
+      text-white
+      "
+    >
+
+
 
       {/* HERO IMAGE */}
-      <div className="h-[420px] w-full bg-black overflow-hidden">
+
+      <section
+        className="
+        h-[420px]
+        w-full
+        bg-black
+        overflow-hidden
+        "
+      >
+
+
         {image ? (
+
           <img
+
             src={image}
+
             alt={typedListing.title}
-            className="w-full h-full object-cover"
+
+            className="
+            w-full
+            h-full
+            object-cover
+            "
           />
-        ) : (
-          <div className="flex items-center justify-center h-full text-white/30">
-            No Image Available
+
+        ):(
+
+
+          <div
+            className="
+            h-full
+            flex
+            items-center
+            justify-center
+            text-white/30
+            "
+          >
+
+            Visibility Space
+
+
           </div>
+
+
         )}
-      </div>
+
+
+
+      </section>
+
+
+
+
+
 
       {/* CONTENT */}
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+
+
+      <section
+        className="
+        max-w-5xl
+        mx-auto
+        px-6
+        py-10
+        space-y-8
+        "
+      >
+
+
+
 
         {/* HEADER */}
-        <div className="flex justify-between items-start">
+
+
+        <div
+          className="
+          flex
+          justify-between
+          gap-6
+          "
+        >
+
+
+
           <div>
-            <h1 className="text-3xl font-bold">
-              {typedListing.title}
-            </h1>
 
-            <p className="text-white/40 mt-1">
+
+            <div
+              className="
+              flex
+              items-center
+              gap-3
+              "
+            >
+
+
+              <h1
+                className="
+                text-4xl
+                font-bold
+                "
+              >
+
+                {typedListing.title}
+
+              </h1>
+
+
+
+              {
+                typedListing.boosted && (
+
+                  <span
+                    className="
+                    px-3
+                    py-1
+                    rounded-full
+                    text-xs
+                    bg-blue-500/20
+                    text-blue-400
+                    "
+                  >
+
+                    Boosted
+
+                  </span>
+
+                )
+              }
+
+
+            </div>
+
+
+
+
+
+            <p
+              className="
+              mt-3
+              text-white/50
+              "
+            >
+
               📍 {typedListing.location}
+
             </p>
 
-            <p className="text-sm text-white/30 mt-1">
-              Type: {typedListing.type ?? "N/A"}
-            </p>
+
+
+
+            {
+              typedListing.type && (
+
+                <p
+                  className="
+                  mt-2
+                  text-sm
+                  text-white/40
+                  "
+                >
+
+                  Category:
+                  {" "}
+                  {typedListing.type}
+
+                </p>
+
+              )
+            }
+
+
+
           </div>
 
-          <div className="text-2xl font-bold text-green-400">
-            ${typedListing.price ?? 0}
+
+
+
+
+          <div
+            className="
+            text-right
+            "
+          >
+
+
+            <p
+              className="
+              text-3xl
+              font-bold
+              text-green-400
+              "
+            >
+
+              {typedListing.currency ?? "ETB"}
+
+              {" "}
+
+              {typedListing.price ?? 0}
+
+
+            </p>
+
+
+
+
+            {
+              typedListing.boost_score &&
+              (
+
+                <p
+                  className="
+                  text-xs
+                  text-blue-400
+                  mt-2
+                  "
+                >
+
+                  Visibility Score:
+                  {" "}
+                  {typedListing.boost_score}
+
+                </p>
+
+              )
+            }
+
+
+
           </div>
+
+
+
+
         </div>
+
+
+
+
+
+
+
 
         {/* DESCRIPTION */}
-        <p className="text-white/70 leading-relaxed">
-          {typedListing.description ?? "No description available."}
-        </p>
 
-        {/* METADATA */}
-        {typedListing.metadata && (
-          <div className="bg-white/5 border border-white/10 p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">Details</h3>
 
-            <pre className="text-white/60 text-sm overflow-auto">
-              {JSON.stringify(typedListing.metadata, null, 2)}
-            </pre>
-          </div>
-        )}
+        <div
+          className="
+          rounded-2xl
+          border
+          border-white/10
+          bg-white/5
+          p-6
+          "
+        >
 
-        {/* CHAT */}
-        <div className="pt-6 border-t border-white/10">
-          <ChatButton
-            listing={{
-              id: typedListing.id,
-              user_id: typedListing.user_id,
-            }}
-          />
+          <h2
+            className="
+            text-xl
+            font-semibold
+            "
+          >
+
+            About this visibility space
+
+          </h2>
+
+
+          <p
+            className="
+            mt-3
+            text-white/70
+            leading-relaxed
+            "
+          >
+
+            {
+              typedListing.description ??
+              "No description provided."
+            }
+
+          </p>
+
+
         </div>
 
-      </div>
+
+
+
+
+
+
+        {/* SPACE DETAILS */}
+
+
+        {
+          typedListing.dimensions && (
+
+            <div
+              className="
+              border
+              border-white/10
+              rounded-xl
+              p-5
+              bg-white/5
+              "
+            >
+
+              <h3
+                className="font-semibold"
+              >
+
+                Dimensions
+
+              </h3>
+
+
+              <p
+                className="text-white/60 mt-2"
+              >
+
+                {typedListing.dimensions}
+
+              </p>
+
+
+            </div>
+
+          )
+        }
+
+
+
+
+
+
+
+        {/* ACTIONS */}
+
+
+        <div
+          className="
+          border-t
+          border-white/10
+          pt-6
+          "
+        >
+
+
+          <ChatButton
+
+            listing={{
+              id:typedListing.id,
+              user_id:typedListing.user_id
+            }}
+
+          />
+
+
+        </div>
+
+
+
+
+
+      </section>
+
+
+
     </main>
+
   );
+
 }

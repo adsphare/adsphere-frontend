@@ -96,7 +96,7 @@ export default function AnalyticsPage() {
             Analytics Dashboard
           </h1>
           <p className="text-gray-400 text-sm">
-            Track your AdSphere performance
+            Track your Adspheria performance
           </p>
         </div>
 
