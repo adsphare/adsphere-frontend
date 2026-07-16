@@ -8,7 +8,7 @@ export const escrowService = {
     sellerId: string;
     amount: number;
   }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data: escrow, error } = await supabase
       .from("escrow_orders")
@@ -29,7 +29,7 @@ export const escrowService = {
   },
 
   async fund(id: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("escrow_orders")
@@ -43,7 +43,7 @@ export const escrowService = {
   },
 
   async release(id: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("escrow_orders")

@@ -15,7 +15,7 @@ export const paymentService = {
      CREATE PAYMENT INTENT
   ------------------------- */
   async createIntent(input: CreatePaymentIntentInput) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     // 1. Create internal payment record first
     const { data: payment, error } = await supabase
@@ -59,7 +59,7 @@ export const paymentService = {
      VERIFY PAYMENT
   ------------------------- */
   async verifyPayment(paymentId: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data: payment, error } = await supabase
       .from("payments")

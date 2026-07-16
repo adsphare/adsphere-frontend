@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 ========================= */
 export async function POST(req: Request) {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const body = await req.json();
     const boostId = body?.boostId;

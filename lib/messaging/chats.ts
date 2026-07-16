@@ -14,7 +14,7 @@ export async function sendMessage({
   senderId: string;
   message: string;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const text = message?.trim();
   if (!conversationId || !senderId || !text) return;
@@ -71,7 +71,7 @@ export async function sendOffer({
   senderId: string;
   amount: number;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { error } = await supabase.from("messages").insert({
     conversation_id: conversationId,
@@ -111,7 +111,7 @@ export async function acceptOfferCreateDeal({
   message: any;
   conversation: any;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: existing } = await supabase
     .from("deals")

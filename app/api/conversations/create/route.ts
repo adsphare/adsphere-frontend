@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { listingId, buyerId, sellerId } = await req.json();
 

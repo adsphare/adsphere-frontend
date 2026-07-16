@@ -10,7 +10,7 @@ export const conversationService = {
     buyerId: string;
     sellerId: string;
   }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data: existing } = await supabase
       .from("conversations")

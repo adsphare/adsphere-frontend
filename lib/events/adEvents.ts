@@ -9,7 +9,7 @@ export async function trackAdEvent(input: {
   listingId: string;
   type: "impression" | "click" | "conversion" | "boost_view" | "boost_click";
 }) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   /* =========================
      1. STORE EVENT (RAW DATA)

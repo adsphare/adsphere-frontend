@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
    GET USER
 ========================= */
 export async function getUser() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data, error } = await supabase.auth.getUser();
 
@@ -25,7 +25,7 @@ export async function createBooking({
   buyer_id: string;
   message: string;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data, error } = await supabase
     .from("bookings")

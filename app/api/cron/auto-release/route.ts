@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 /* runs every X minutes via cron (Vercel / server) */
 export async function GET() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const now = new Date().toISOString();
 

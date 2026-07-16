@@ -11,7 +11,7 @@ export async function resolveDispute({
   action: Action;
   adminId: string;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   // 1. Get dispute
   const { data: dispute, error } = await supabase

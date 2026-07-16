@@ -14,7 +14,7 @@ export const marketplaceService = {
      GET MARKETPLACE FEED
   ========================= */
   async getFeed(filter?: MarketplaceFilter) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     let query = supabase
       .from("listings")
@@ -79,7 +79,7 @@ export const marketplaceService = {
      GET SINGLE LISTING
   ========================= */
   async getListing(id: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("listings")

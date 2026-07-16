@@ -16,7 +16,11 @@
     "jsx": "preserve",
     "incremental": true,
 
-    "plugins": [{ "name": "next" }],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
 
     "baseUrl": ".",
     "paths": {
@@ -36,6 +40,7 @@
 
   "exclude": [
     "node_modules",
-    ".next"
+    ".next",
+    "app_BACKUP"
   ]
 }

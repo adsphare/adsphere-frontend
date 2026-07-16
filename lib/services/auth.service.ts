@@ -10,7 +10,7 @@ export const authService = {
      GET CURRENT USER
   ========================= */
   async getCurrentUser() {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const {
       data: { user },
@@ -28,7 +28,7 @@ export const authService = {
      GET USER PROFILE (WITH ROLE)
   ========================= */
   async getUserProfile(userId: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("profiles")

@@ -17,7 +17,7 @@ export async function createNotification({
   type: NotificationTypes;
   link?: string;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data, error } = await supabase
     .from("notifications")

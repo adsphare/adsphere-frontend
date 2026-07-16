@@ -2,15 +2,14 @@ import { requireAdmin } from "@/lib/admin/requireAdmin";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export default async function AdminUsersPage() {
-  await requireAdmin();
+  const supabase = await createServerSupabase();
 
-  const supabase = createServerSupabase();
+  await requireAdmin(supabase);
 
   const { data: users, error } = await supabase
     .from("users")
     .select("*")
     .order("created_at", { ascending: false });
-
   if (error) {
     return (
       <div className="p-6 text-red-400">
@@ -47,9 +46,3 @@ export default async function AdminUsersPage() {
     </div>
   );
 }
-
-
-
-
-
-

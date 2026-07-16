@@ -19,7 +19,7 @@ export const boostService = {
      ACTIVATE BOOST
   ========================= */
   async activate(input: { listingId: string; plan: BoostPlan }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const config = BOOST_PLANS[input.plan];
 
@@ -70,7 +70,7 @@ export const boostService = {
      EXPIRE BOOSTS
   ========================= */
   async expire() {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const now = new Date().toISOString();
 

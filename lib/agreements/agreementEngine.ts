@@ -17,7 +17,7 @@ export async function agreementEngine(
   action: AgreementAction,
   agreementId: string
 ) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   // 1. Fetch agreement
   const { data: agreement, error } = await supabase

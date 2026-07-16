@@ -23,7 +23,7 @@ export const notificationService = {
      CREATE NOTIFICATION
   ========================= */
   async create(input: CreateNotificationInput) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { error } = await supabase.from("notifications").insert({
       user_id: input.userId,
@@ -47,7 +47,7 @@ export const notificationService = {
      GET USER NOTIFICATIONS
   ========================= */
   async getUserNotifications(userId: string) {
-   const supabase = createServerSupabase();
+   const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("notifications")
@@ -66,7 +66,7 @@ export const notificationService = {
      MARK AS READ
   ========================= */
   async markAsRead(notificationId: string) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("notifications")
@@ -88,7 +88,7 @@ export const notificationService = {
      MARK ALL AS READ
   ========================= */
   async markAllAsRead(userId: string) {
-   const supabase = createServerSupabase();
+   const supabase = await createServerSupabase();
 
     const { error } = await supabase
       .from("notifications")
@@ -107,7 +107,7 @@ export const notificationService = {
      DELETE NOTIFICATION
   ========================= */
   async delete(notificationId: string) {
-const supabase = createServerSupabase();
+const supabase = await createServerSupabase();
 
     const { error } = await supabase
       .from("notifications")

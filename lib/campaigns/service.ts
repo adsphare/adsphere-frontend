@@ -2,7 +2,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 
 export const campaignService = {
   async create(input: any) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("campaigns")
@@ -22,7 +22,7 @@ export const campaignService = {
   },
 
   async getById(id: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("campaigns")
@@ -36,7 +36,7 @@ export const campaignService = {
   },
 
   async updateStatus(id: string, status: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("campaigns")

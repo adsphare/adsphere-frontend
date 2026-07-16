@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const CHAPA_SECRET_KEY = process.env.CHAPA_SECRET_KEY;
     const SITE_URL = process.env.NEXT_PUBLIC_APP_URL;

@@ -1,104 +1,127 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
-export default function ActivityPage() {
-  const [events, setEvents] = useState<any[]>([]);
+type Activity = {
+  id: string;
+  user_id: string;
+  event_type?: string;
+  action?: string;
+  description?: string;
+  created_at: string;
+};
+
+export default function ActivityFeed() {
+  const db = createBrowserSupabase();
+
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadActivity();
+    void loadActivity();
   }, []);
 
   async function loadActivity() {
     try {
       const { data: userData } = await db.auth.getUser();
+
       const user = userData?.user;
 
       if (!user) {
-        setLoading(false);
+        setActivities([]);
         return;
       }
 
-      // 1. Get listing IDs
-      const { data: listings } = await db
-        .from("listings")
-        .select("id")
-        .eq("user_id", user.id);
-
-      const listingIds = listings?.map((l) => l.id) || [];
-
-      // 2. Views / analytics
-      const { data: views } = await db
+      const { data, error } = await db
         .from("analytics_events")
         .select("*")
-        .in("listing_id", listingIds)
-        .order("created_at", { ascending: false });
+        .eq("user_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(10);
 
-      // 3. Messages activity
-      const { data: messages } = await db
-        .from("messages")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(20);
+      if (error) {
+        console.error(
+          "Activity load error:",
+          error.message
+        );
+        return;
+      }
 
-      // 4. Merge events
-      const merged = [
-        ...(views || []).map((v) => ({
-          type: "view",
-          text: "Someone viewed your listing",
-          time: v.created_at,
-        })),
-        ...(messages || []).map((m) => ({
-          type: "message",
-          text: "New message received",
-          time: m.created_at,
-        })),
-      ];
-
-      merged.sort(
-        (a, b) =>
-          new Date(b.time).getTime() - new Date(a.time).getTime()
+      setActivities(
+        (data as Activity[]) || []
       );
 
-      setEvents(merged);
-    } catch (err) {
-      console.error("Activity load error:", err);
+    } catch (error) {
+      console.error(
+        "Activity error:",
+        error
+      );
+
     } finally {
       setLoading(false);
     }
   }
 
+
   if (loading) {
     return (
-      <div className="p-6 text-white">Loading activity...</div>
+      <div className="text-white/50">
+        Loading activity...
+      </div>
     );
   }
 
-  return (
-    <div className="p-6 text-white">
 
-      <h1 className="text-2xl font-bold mb-6">Activity</h1>
-
-      {events.length === 0 && (
-        <p className="text-gray-400">No activity yet.</p>
-      )}
-
-      <div className="space-y-3">
-        {events.map((e, i) => (
-          <div
-            key={i}
-            className="p-4 bg-white/5 border border-white/10 rounded-xl"
-          >
-            <p className="text-white">{e.text}</p>
-            <p className="text-xs text-gray-400 mt-1">
-              {new Date(e.time).toLocaleString()}
-            </p>
-          </div>
-        ))}
+  if (activities.length === 0) {
+    return (
+      <div className="text-white/50">
+        No recent activity
       </div>
+    );
+  }
+
+
+  return (
+    <div className="space-y-3">
+
+      {activities.map((item) => (
+        <div
+          key={item.id}
+          className="
+            p-4
+            rounded-xl
+            border
+            border-white/10
+            bg-white/5
+          "
+        >
+
+          <div className="font-medium">
+            {item.action ||
+              item.event_type ||
+              "Activity"}
+          </div>
+
+
+          {item.description && (
+            <p className="text-sm text-white/50 mt-1">
+              {item.description}
+            </p>
+          )}
+
+
+          <p className="text-xs text-white/30 mt-2">
+            {new Date(
+              item.created_at
+            ).toLocaleString()}
+          </p>
+
+        </div>
+      ))}
 
     </div>
   );
 }
-

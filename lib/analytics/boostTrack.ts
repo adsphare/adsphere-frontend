@@ -10,7 +10,7 @@ export async function trackBoostImpression(listing: Listing) {
     if (!listing?.is_boosted) return;
     if (!listing?.id) return;
 
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { error } = await supabase.rpc("increment_boost_impressions", {
       listing_id_input: listing.id,

@@ -7,7 +7,7 @@ const VALID_PLANS = ["basic", "pro", "premium"] as const;
 
 export async function POST(req: Request) {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { listingId, plan } = await req.json();
 

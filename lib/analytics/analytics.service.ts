@@ -13,7 +13,7 @@ export const analyticsService = {
      TRACK EVENT (FAST + SAFE)
   ========================= */
   async trackEvent(input: TrackEventInput) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { error } = await supabase.from("analytics_events").insert({
       listing_id: input.listingId,
@@ -34,7 +34,7 @@ export const analyticsService = {
      GET LISTING STATS
   ========================= */
   async getListingStats(listingId: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("analytics_events")

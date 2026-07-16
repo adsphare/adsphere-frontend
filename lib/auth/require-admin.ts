@@ -3,7 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export async function requireAdmin() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   // 1. Get authenticated user
   const {

@@ -13,7 +13,7 @@ async function requireAdmin() {
 export default async function AdminPage() {
   await requireAdmin();
 
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: conversations } = await supabase
     .from("conversations")

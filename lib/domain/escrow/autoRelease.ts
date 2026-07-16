@@ -6,7 +6,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 ========================= */
 
 export async function autoReleaseEngine() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const now = new Date().toISOString();
 

@@ -2,7 +2,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 
 export const cronService = {
   async expireBoosts() {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const now = new Date().toISOString();
 

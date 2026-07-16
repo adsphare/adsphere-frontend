@@ -3,7 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";;
 
 export const boostService = {
   async activate(listingId: string, plan: "basic" | "pro" | "premium") {
-   const supabase = createServerSupabase();
+   const supabase = await createServerSupabase();
 
     const config = {
       basic: { score: 100, multiplier: 1.2, days: 5 },

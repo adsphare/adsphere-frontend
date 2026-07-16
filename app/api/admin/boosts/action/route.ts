@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 
-
 import { createServerSupabase } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 
 export async function POST(req: Request) {
   try {
-    await requireAdmin();
+    const supabase = await createServerSupabase();
 
-  const supabase = createServerSupabase();
+    await requireAdmin(supabase);
 
     const body = await req.json();
     const { boostId, action } = body;
@@ -36,11 +35,17 @@ export async function POST(req: Request) {
         .single();
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
+        );
       }
 
-      return NextResponse.json({ boost: data });
+      return NextResponse.json({
+        boost: data,
+      });
     }
+
 
     // ❌ EXPIRE BOOST
     if (action === "expire") {
@@ -55,27 +60,32 @@ export async function POST(req: Request) {
         .single();
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
+        );
       }
 
-      return NextResponse.json({ boost: data });
+      return NextResponse.json({
+        boost: data,
+      });
     }
+
 
     return NextResponse.json(
       { error: "Invalid action" },
       { status: 400 }
     );
 
+
   } catch (err: any) {
     return NextResponse.json(
-      { error: err.message || "Internal error" },
-      { status: 500 }
+      {
+        error: err.message || "Internal error",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
-
-
-
-
-
-

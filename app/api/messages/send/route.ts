@@ -3,7 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const body = await req.json();
 
     const { conversationId, senderId, content, type } = body;

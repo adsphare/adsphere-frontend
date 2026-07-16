@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
  * Prevent duplicate webhook processing
  */
 export async function isEventProcessed(eventId: string) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data } = await supabase
     .from("payment_events")
@@ -24,7 +24,7 @@ export async function markEventProcessed(input: {
   raw?: any;
   escrowId?: string;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   await supabase.from("payment_events").insert({
     id: input.id,

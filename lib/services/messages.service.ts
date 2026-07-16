@@ -14,7 +14,7 @@ export const messageService = {
     senderId: string;
     message: string;
   }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("messages")
@@ -35,7 +35,7 @@ export const messageService = {
 
   // 🟡 MARK DELIVERED
   async markDelivered(messageId: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { error } = await supabase
       .from("messages")
@@ -52,7 +52,7 @@ export const messageService = {
 
   // 👀 MARK SEEN
   async markSeen(conversationId: string, userId: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { error } = await supabase
       .from("messages")
@@ -70,7 +70,7 @@ export const messageService = {
 
   // 📥 GET MESSAGES
   async getMessages(conversationId: string) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
       .from("messages")

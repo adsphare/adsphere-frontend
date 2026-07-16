@@ -64,7 +64,15 @@ bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.07),transparent_65%)]
 "
 />
 
-
+<div
+className="
+absolute
+inset-0
+opacity-20
+bg-[radial-gradient(circle_at_20%_30%,rgba(59,130,246,0.18)_1px,transparent_1px)]
+bg-[size:80px_80px]
+"
+/>
 </div>
 
 
@@ -88,15 +96,14 @@ items-center
 <div
 className="
 grid
+grid-cols-1
 lg:grid-cols-2
 gap-16
+lg:gap-20
 items-center
 w-full
 "
 >
-
-
-
 
 
 {/* LEFT CONTENT */}
@@ -151,8 +158,10 @@ Visibility Operating System
 <h1
 
 className="
-text-6xl
-md:text-[92px]
+text-5xl
+sm:text-6xl
+md:text-7xl
+lg:text-[92px]
 font-semibold
 leading-[0.95]
 tracking-[-0.06em]
@@ -183,8 +192,30 @@ Economy
 
 
 
+<h1
+  className="
+    text-5xl
+    sm:text-6xl
+    md:text-7xl
+    lg:text-[92px]
+    font-semibold
+    leading-[0.95]
+    tracking-[-0.06em]
+  "
+>
+  The World&apos;s
 
+  <span
+    className="
+      block
+      text-blue-500
+    "
+  >
+    Visibility
+  </span>
 
+  Economy
+</h1>
 
 
 <p
@@ -382,7 +413,7 @@ rotate:360
 }}
 
 transition={{
-duration:40,
+duration:50,
 repeat:Infinity,
 ease:"linear"
 }}
@@ -391,8 +422,8 @@ className="
 absolute
 w-[430px]
 h-[430px]
-md:w-[600px]
-md:h-[600px]
+md:w-[560px]
+md:h-[560px]
 rounded-full
 border
 border-blue-500/20
@@ -435,7 +466,7 @@ rotate:-360
 }}
 
 transition={{
-duration:35,
+duration:42,
 repeat:Infinity,
 ease:"linear"
 }}
@@ -505,14 +536,34 @@ z-20
 <div
 className="
 relative
-w-[220px]
-h-[220px]
-md:w-[320px]
-md:h-[320px]
+w-[320px]
+h-[320px]
+md:w-[460px]
+md:h-[460px]
+"
+>
+  <motion.div
+
+animate={{
+scale:[1,1.08,1],
+opacity:[0.25,0.45,0.25]
+}}
+
+transition={{
+duration:5,
+repeat:Infinity,
+ease:"easeInOut"
+}}
+
+className="
+absolute
+inset-0
+rounded-full
+bg-blue-500/10
+blur-3xl
 "
 
->
-
+/>  
 <Image
 
 src="/logo.png"
@@ -525,7 +576,7 @@ priority
 
 className="
 object-contain
-drop-shadow-[0_0_50px_rgba(59,130,246,0.45)]
+drop-shadow-[0_0_100px_rgba(59,130,246,0.75)]
 "
 
 />
@@ -575,7 +626,18 @@ value="Connect"
 
 />
 
+<FloatingNode
 
+position="
+top-14
+right-[28%]
+"
+
+title="Advertisers"
+
+value="Campaigns"
+
+/>
 
 <FloatingNode
 
@@ -586,7 +648,7 @@ right-0
 
 title="Visibility"
 
-value="Verified"
+value="Verified Network"
 
 />
 
@@ -637,34 +699,39 @@ return (
 <motion.div
 
 animate={{
-y:[0,-12,0]
+y:[0,-14,0],
+rotate:[0,0.8,0,-0.8,0]
 }}
 
 transition={{
-duration:5,
+duration:6,
 repeat:Infinity,
 ease:"easeInOut"
 }}
 
 className={`
+
 absolute
 ${position}
-z-30
+z-20
 rounded-2xl
 border
 border-white/10
-bg-white/[0.06]
-backdrop-blur-xl
-px-5
+bg-white/[0.05]
+backdrop-blur-2xl
+px-6
 py-4
-shadow-xl
-shadow-blue-500/10
+shadow-2xl
+shadow-blue-500/20
+
 `}
 >
 
 
 <p className="
-text-xs
+text-[11px]
+uppercase
+tracking-[0.25em]
 text-white/40
 ">
 
@@ -674,14 +741,14 @@ text-white/40
 
 
 <p className="
-text-blue-400
+mt-1
+text-blue-300
 font-semibold
 ">
 
 {value}
 
 </p>
-
 
 </motion.div>
 

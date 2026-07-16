@@ -9,7 +9,7 @@ type BoostAnalytics = {
 };
 
 export default async function Page() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data } = await supabase
     .from("boost_analytics")

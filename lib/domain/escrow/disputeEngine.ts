@@ -9,7 +9,7 @@ export async function disputeEngine({
   userId: string;
   reason?: string;
 }) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   // 1. Create dispute
   const { data: dispute, error } = await supabase

@@ -17,7 +17,7 @@ export async function createNotification({
   link,
 }: CreateNotificationInput) {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { error } = await supabase.from("notifications").insert({
       user_id: userId,

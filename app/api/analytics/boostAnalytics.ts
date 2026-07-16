@@ -12,7 +12,7 @@ export async function trackBoostImpression(
   listingId: string
 ) {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { error } = await supabase.rpc(
       "increment_boost_impressions",
@@ -42,7 +42,7 @@ export async function trackBoostClick(
   listingId: string
 ) {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { error } = await supabase.rpc(
       "increment_boost_clicks",
@@ -72,7 +72,7 @@ export async function trackBoostConversion(
   listingId: string
 ) {
   try {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { error } = await supabase.rpc(
       "increment_boost_conversions",

@@ -2,7 +2,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { rankListing } from "@/lib/ranking/rankListing";
 
 export async function updateRank(listingId: string) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data, error } = await supabase
     .from("listings")

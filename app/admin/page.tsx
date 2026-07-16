@@ -51,7 +51,7 @@ async function requireAdmin(supabase: SupabaseClient) {
 ========================= */
 export default async function AdminPage() {
   // ✅ CORRECT: single SSR Supabase instance
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   // ✅ admin guard
   await requireAdmin(supabase);

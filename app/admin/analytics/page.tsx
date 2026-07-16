@@ -2,7 +2,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { calculateBoostPerformance } from "@/lib/boost/calculateBoostPerformance";
 
 export default async function Page() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data, error } = await supabase
     .from("boost_analytics")

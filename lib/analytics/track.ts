@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
    TRACK IMPRESSION
 ========================= */
 export async function trackImpression(listingId: string) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   await supabase.rpc("increment_impressions", {
     row_id: listingId,
@@ -25,7 +25,7 @@ export async function trackImpression(listingId: string) {
    TRACK CLICK
 ========================= */
 export async function trackClick(listingId: string) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   await supabase.rpc("increment_clicks", {
     row_id: listingId,
@@ -46,7 +46,7 @@ export async function trackClick(listingId: string) {
    TRACK CONVERSION
 ========================= */
 export async function trackConversion(listingId: string) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   await supabase.rpc("increment_conversions", {
     row_id: listingId,

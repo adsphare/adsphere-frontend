@@ -2,7 +2,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export default async function AdminVerifications() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   /* =========================
      AUTH CHECK

@@ -3,7 +3,7 @@ import { refundEscrow } from "@/lib/domain/escrow/escrow.service";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const {
     data: { user },

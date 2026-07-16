@@ -2,7 +2,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function getSetting(key: string) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data, error } = await supabase
     .from("settings")

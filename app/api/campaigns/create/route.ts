@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 export async function POST(req: Request) {
   try {
     // ✅ Supabase client must be INSIDE handler
-     const supabase = createServerSupabase();
+     const supabase = await createServerSupabase();
 
     const body = await req.json();
 
