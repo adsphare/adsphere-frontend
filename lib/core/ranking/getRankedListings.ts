@@ -4,10 +4,6 @@ import {
   rankListing,
 } from "./listingRank";
 
-import type {
-  Listing,
-} from "@/lib/listings/types";
-
 
 export async function getRankedListings() {
 
@@ -62,7 +58,7 @@ export async function getRankedListings() {
     (data ?? []).map((item) => {
 
 
-      const listing: Listing = {
+      const listing = {
 
         id: item.id,
 
@@ -106,6 +102,7 @@ export async function getRankedListings() {
     "RANKED RESULT:",
     ranked
   );
+
 
 
   return ranked.sort(

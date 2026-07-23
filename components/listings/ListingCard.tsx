@@ -8,7 +8,7 @@ type Listing = {
   id: string;
   title: string;
   location: string;
-  owner_id: string;
+  user_id: string;
   rank?: number;
 };
 
@@ -17,8 +17,8 @@ export default function ListingCard({ listing }: { listing: Listing }) {
   const [trust, setTrust] = useState(50);
 
   useEffect(() => {
-    trustScore.get(listing.owner_id).then(setTrust);
-  }, [listing.owner_id]);
+    trustScore.get(listing.user_id).then(setTrust);
+  }, [listing.user_id]);
 
   const isHighTrust = trust >= 80;
 

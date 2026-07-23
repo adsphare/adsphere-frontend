@@ -211,40 +211,20 @@ border-white/10
 
 
 <option value="billboard">
-Billboard
+  Billboard
 </option>
-
 
 <option value="creator">
-Creator
+  Creator
 </option>
 
-
-<option value="screen">
-Digital Screen
+<option value="digital">
+  Digital Screen
 </option>
-
-
-<option value="event">
-Event
-</option>
-
-
-<option value="ngo">
-NGO Visibility
-</option>
-
-
-<option value="business">
-Business Space
-</option>
-
 
 <option value="other">
-Other
+  Other
 </option>
-
-
 </select>
 
 

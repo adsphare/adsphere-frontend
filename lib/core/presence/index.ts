@@ -1,6 +1,9 @@
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export const presence = {
   async setOnline(userId: string) {
+    const db = await createServerSupabase();
+
     await db.from("user_presence").upsert({
       user_id: userId,
       status: "online",
@@ -10,6 +13,8 @@ export const presence = {
   },
 
   async setOffline(userId: string) {
+    const db = await createServerSupabase();
+
     await db.from("user_presence").upsert({
       user_id: userId,
       status: "offline",
@@ -19,6 +24,8 @@ export const presence = {
   },
 
   async heartbeat(userId: string) {
+    const db = await createServerSupabase();
+
     await db.from("user_presence").upsert({
       user_id: userId,
       status: "online",
@@ -27,4 +34,3 @@ export const presence = {
     });
   },
 };
-

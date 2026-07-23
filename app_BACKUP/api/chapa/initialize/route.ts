@@ -3,156 +3,488 @@ import { createServerSupabase } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
-  try {
-    const supabase = createServerSupabase();
 
-    const CHAPA_SECRET_KEY = process.env.CHAPA_SECRET_KEY;
-    const SITE_URL = process.env.NEXT_PUBLIC_APP_URL;
+export async function POST(req: Request) {
+
+  try {
+
+    const supabase =
+      await createServerSupabase();
+
+
+    const CHAPA_SECRET_KEY =
+      process.env.CHAPA_SECRET_KEY;
+
+
+    const SITE_URL =
+      process.env.NEXT_PUBLIC_APP_URL;
+
+
 
     if (!CHAPA_SECRET_KEY || !SITE_URL) {
+
       return NextResponse.json(
-        { success: false, message: "Missing environment variables" },
-        { status: 500 }
+        {
+          success:false,
+          message:"Missing Chapa environment variables",
+        },
+        {
+          status:500,
+        }
       );
+
     }
 
-    const { listingId, plan, email } = await req.json();
+
+
+    const {
+      listingId,
+      plan,
+      email,
+    } = await req.json();
+
+
+
 
     if (!listingId || !plan) {
+
       return NextResponse.json(
-        { success: false, message: "Missing data" },
-        { status: 400 }
+        {
+          success:false,
+          message:"Missing listingId or plan",
+        },
+        {
+          status:400,
+        }
       );
+
     }
 
-    // 🔐 AUTH CHECK (IMPORTANT FIX)
+
+
+
+    // AUTH USER
+
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data:{
+        user
+      }
+
+    } =
+      await supabase.auth.getUser();
+
+
+
 
     if (!user) {
+
       return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
+        {
+          success:false,
+          message:"Unauthorized",
+        },
+        {
+          status:401,
+        }
       );
+
     }
 
-    // 🔐 VERIFY LISTING OWNERSHIP (IMPORTANT FOR SECURITY)
-    const { data: listing, error: listingError } = await supabase
+
+
+
+
+    // ENSURE PUBLIC USER EXISTS
+
+    const {
+      data: existingUser
+    } =
+      await supabase
+      .from("users")
+      .select("id")
+      .eq(
+        "id",
+        user.id
+      )
+      .maybeSingle();
+
+
+
+
+
+    if (!existingUser) {
+
+
+      const {
+        error:userCreateError
+      } =
+        await supabase
+        .from("users")
+        .insert({
+
+          id:user.id,
+
+          email:user.email,
+
+          // FIXED ROLE
+          role:"creator",
+
+          trust_level:"new",
+
+          is_verified:false,
+
+        });
+
+
+
+
+
+      if(userCreateError){
+
+        console.error(
+          "USER CREATE ERROR:",
+          userCreateError
+        );
+
+
+        return NextResponse.json(
+          {
+            success:false,
+            message:userCreateError.message,
+          },
+          {
+            status:500,
+          }
+        );
+
+      }
+
+    }
+
+
+
+
+
+    // CHECK LISTING
+
+    const {
+      data:listing,
+      error:listingError
+
+    } =
+      await supabase
       .from("listings")
-      .select("id, user_id")
-      .eq("id", listingId)
+      .select(
+        "id,user_id,title"
+      )
+      .eq(
+        "id",
+        listingId
+      )
       .single();
 
-    if (listingError || !listing) {
+
+
+
+    if(listingError || !listing){
+
       return NextResponse.json(
-        { success: false, message: "Listing not found" },
-        { status: 404 }
+        {
+          success:false,
+          message:"Listing not found",
+        },
+        {
+          status:404,
+        }
       );
+
     }
 
-    if (listing.user_id !== user.id) {
+
+
+
+
+    if(listing.user_id !== user.id){
+
       return NextResponse.json(
-        { success: false, message: "Not your listing" },
-        { status: 403 }
+        {
+          success:false,
+          message:"You don't own this listing",
+        },
+        {
+          status:403,
+        }
       );
+
     }
 
-    const prices: Record<string, number> = {
-      basic: 100,
-      pro: 250,
-      premium: 500,
+
+
+
+
+    // BOOST PLANS
+
+    const prices:Record<string,number> = {
+
+      basic:2000,
+
+      pro:5000,
+
+      premium:10000,
+
     };
 
-    const amount = prices[plan];
 
-    if (!amount) {
+
+
+
+    const amount =
+      prices[plan];
+
+
+
+
+
+    if(!amount){
+
       return NextResponse.json(
-        { success: false, message: "Invalid boost plan" },
-        { status: 400 }
+        {
+          success:false,
+          message:"Invalid boost plan",
+        },
+        {
+          status:400,
+        }
       );
+
     }
 
-    const tx_ref = `boost_${listingId}_${Date.now()}`;
 
-    // 💰 SAVE PAYMENT RECORD (SAFE)
-    const { error: paymentError } = await supabase.from("payments").insert({
-      listing_id: listingId,
-      user_id: user.id,
+
+
+
+    const tx_ref =
+      `boost_${listingId}_${Date.now()}`;
+
+
+
+
+
+
+    // CREATE PAYMENT RECORD
+
+    const {
+      error:paymentError
+
+    } =
+      await supabase
+      .from("payments")
+      .insert({
+
+        user_id:user.id,
+
+        amount,
+
+        currency:"ETB",
+
+        provider:"chapa",
+
+        status:"pending",
+
+        legacy_transaction_ref:
+          tx_ref,
+
+        provider_reference:
+          tx_ref,
+
+      });
+
+
+
+
+
+
+    if(paymentError){
+
+      console.error(
+        "PAYMENT INSERT ERROR:",
+        paymentError
+      );
+
+
+      return NextResponse.json(
+        {
+          success:false,
+          message:paymentError.message,
+        },
+        {
+          status:500,
+        }
+      );
+
+    }
+
+
+
+
+
+
+
+    // CHAPA INITIALIZE
+
+    const chapaResponse =
+      await fetch(
+        "https://api.chapa.co/v1/transaction/initialize",
+        {
+
+          method:"POST",
+
+          headers:{
+
+            Authorization:
+              `Bearer ${CHAPA_SECRET_KEY}`,
+
+            "Content-Type":
+              "application/json",
+
+          },
+
+
+          body:JSON.stringify({
+
+            amount,
+
+            currency:"ETB",
+
+
+            email:
+              email ||
+              user.email ||
+              "customer@adspheria.com",
+
+
+            first_name:
+              "Adspheria",
+
+
+            last_name:
+              "Customer",
+
+
+            tx_ref,
+
+
+            callback_url:
+              `${SITE_URL}/api/chapa/verify`,
+
+
+            return_url:
+              `${SITE_URL}/boost/success`,
+
+
+
+            customization:{
+
+              title:
+                "Adspheria Boost",
+
+
+              description:
+                `${plan} visibility boost for ${listing.title}`,
+
+            },
+
+          }),
+
+        }
+      );
+
+
+
+
+
+
+
+    const chapaData =
+      await chapaResponse.json();
+
+
+
+
+
+
+    if(
+      !chapaResponse.ok ||
+      !chapaData?.data?.checkout_url
+    ){
+
+      console.error(
+        "CHAPA ERROR:",
+        chapaData
+      );
+
+
+      return NextResponse.json(
+        {
+          success:false,
+
+          message:
+            "Chapa initialization failed",
+
+          raw:
+            chapaData,
+
+        },
+        {
+          status:500,
+        }
+      );
+
+    }
+
+
+
+
+
+
+    return NextResponse.json({
+
+      success:true,
+
+      checkout_url:
+        chapaData.data.checkout_url,
+
       tx_ref,
-      provider: "chapa",
-      payment_type: "boost",
-      amount,
-      currency: "ETB",
-      status: "pending",
-      plan,
+
     });
 
-    if (paymentError) {
-      return NextResponse.json(
-        { success: false, message: "Failed to create payment record" },
-        { status: 500 }
-      );
-    }
 
-    // 💳 INIT CHAPA
-    const response = await fetch(
-      "https://api.chapa.co/v1/transaction/initialize",
+
+
+
+
+  } catch(error:any){
+
+
+    console.error(
+      "CHAPA INITIALIZE ERROR:",
+      error
+    );
+
+
+    return NextResponse.json(
       {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${CHAPA_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount,
-          currency: "ETB",
-          email: email || user.email || "user@adsphere.com",
-          first_name: "Adsphere",
-          last_name: "User",
-          tx_ref,
-          callback_url: `${SITE_URL}/api/chapa/verify`,
-          return_url: `${SITE_URL}/boost/success`,
-          customization: {
-            title: "Boost Listing",
-            description: `${plan} Listing Boost`,
-          },
-        }),
+        success:false,
+
+        message:
+          error.message ||
+          "Server error",
+      },
+      {
+        status:500,
       }
     );
 
-    const data = await response.json();
-
-    if (!response.ok || !data?.data?.checkout_url) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Failed to initialize Chapa payment",
-          raw: data,
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      checkout_url: data.data.checkout_url,
-      tx_ref,
-    });
-  } catch (error: any) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: error.message || "Server Error",
-      },
-      { status: 500 }
-    );
   }
+
 }
-
-
-
-
-
-

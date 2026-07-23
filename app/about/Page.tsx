@@ -3,8 +3,11 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 
+
 export default function AboutPage() {
+
   return (
+
     <main
       className="
       relative
@@ -17,7 +20,8 @@ export default function AboutPage() {
       "
     >
 
-      {/* LIGHT FIELD */}
+
+      {/* BACKGROUND LIGHT */}
 
       <div
         className="
@@ -29,7 +33,7 @@ export default function AboutPage() {
         h-[900px]
         rounded-full
         bg-blue-600/20
-        blur-[200px]
+        blur-[220px]
         "
       />
 
@@ -40,51 +44,68 @@ export default function AboutPage() {
 
         {/* HERO */}
 
+
         <motion.section
+
           initial={{
-            opacity: 0,
-            y: 50
+            opacity:0,
+            y:40
           }}
+
           animate={{
-            opacity: 1,
-            y: 0
+            opacity:1,
+            y:0
           }}
+
           transition={{
-            duration: 1
+            duration:1
           }}
-          className="text-center"
+
+          className="
+          text-center
+          "
+
         >
 
 
           <div
+
             className="
             inline-flex
             px-5
             py-2
             rounded-full
             border
-            border-blue-500/20
+            border-blue-500/30
             bg-blue-500/10
             text-blue-300
             text-xs
-            tracking-[0.25em]
             uppercase
+            tracking-[0.35em]
             "
+
           >
+
             The Infrastructure Behind Attention
+
           </div>
 
 
 
+
+
           <h1
+
             className="
             mt-10
             text-5xl
+            sm:text-6xl
             md:text-7xl
             font-semibold
-            tracking-[-0.04em]
+            tracking-[-0.05em]
             leading-[1.05]
             "
+
           >
 
             One Ecosystem.
@@ -95,20 +116,25 @@ export default function AboutPage() {
               Endless Connections.
             </span>
 
+
           </h1>
 
 
 
 
+
           <p
+
             className="
             mt-8
             max-w-3xl
             mx-auto
-            text-xl
+            text-lg
+            md:text-xl
             leading-relaxed
             text-white/50
             "
+
           >
 
             Every opportunity starts with being seen.
@@ -116,10 +142,11 @@ export default function AboutPage() {
             <br />
 
             Adspheria creates the infrastructure where
-            brands, creators, advertisers, and spaces
-            discover, connect, and grow together.
+            brands, creators, advertisers, and visibility
+            spaces connect, collaborate, and grow.
 
           </p>
+
 
 
         </motion.section>
@@ -129,40 +156,51 @@ export default function AboutPage() {
 
 
 
-        {/* SHOWCASE IMAGE */}
+
+        {/* ABOUT SHOWCASE */}
 
 
         <motion.div
 
+
           initial={{
             opacity:0,
-            scale:.95
+            y:50,
+            scale:.96
           }}
+
 
           whileInView={{
             opacity:1,
+            y:0,
             scale:1
           }}
+
+
+          viewport={{
+            once:true,
+            amount:.2
+          }}
+
 
           transition={{
             duration:1
           }}
 
-          viewport={{
-            once:true
-          }}
 
           className="
           relative
           mt-20
-          h-[650px]
-          rounded-[50px]
+          h-[420px]
+          md:h-[650px]
+          rounded-[45px]
           overflow-hidden
           border
           border-white/10
           bg-white/5
           shadow-2xl
           "
+
         >
 
 
@@ -180,7 +218,9 @@ export default function AboutPage() {
           />
 
 
+
           <div
+
             className="
             absolute
             inset-0
@@ -188,7 +228,9 @@ export default function AboutPage() {
             from-[#050816]
             via-transparent
             "
+
           />
+
 
 
         </motion.div>
@@ -198,34 +240,36 @@ export default function AboutPage() {
 
 
 
-
         {/* SYSTEM PILLARS */}
 
 
+
         <section
+
           className="
           mt-28
           grid
           md:grid-cols-3
           gap-8
           "
+
         >
 
 
           {[
             {
-              title:"A Connected Network",
-              text:"A unified layer where brands, creators, advertisers, and physical spaces interact seamlessly."
+              title:"Connected Network",
+              text:"A unified ecosystem connecting brands, creators, advertisers, and physical visibility spaces."
             },
 
             {
               title:"Trusted Infrastructure",
-              text:"Verified inventory, transparent transactions, and intelligent systems built for confidence."
+              text:"Verified participants, transparent transactions, and systems designed for confidence."
             },
 
             {
               title:"Visibility Intelligence",
-              text:"AI-powered ranking and analytics that transform attention into measurable outcomes."
+              text:"AI-powered ranking and analytics transforming attention into measurable impact."
             }
 
           ].map((item)=>(
@@ -235,47 +279,58 @@ export default function AboutPage() {
 
               key={item.title}
 
+
               whileHover={{
                 y:-12,
-                scale:1.02
+                scale:1.03
               }}
 
-              transition={{
-                duration:.3
-              }}
 
               className="
               rounded-3xl
               border
               border-white/10
-              bg-white/5
+              bg-white/[0.05]
               backdrop-blur-xl
-              p-10
+              p-8
+              md:p-10
               "
+
             >
 
 
+
               <h3
+
                 className="
                 text-2xl
                 font-semibold
                 text-blue-400
                 "
+
               >
+
                 {item.title}
+
               </h3>
 
 
 
+
               <p
+
                 className="
                 mt-5
                 text-white/50
                 leading-relaxed
                 "
+
               >
+
                 {item.text}
+
               </p>
+
 
 
             </motion.div>
@@ -285,33 +340,29 @@ export default function AboutPage() {
 
 
         </section>
-
-
-
-
-
-
-
-
-        {/* VISION */}
+                {/* VISION SECTION */}
 
 
         <section
+
           className="
-          mt-32
+          mt-36
           text-center
           "
+
         >
 
 
           <h2
+
             className="
             text-5xl
-            md:text-6xl
+            md:text-7xl
             font-semibold
-            tracking-[-0.04em]
+            tracking-[-0.05em]
             leading-tight
             "
+
           >
 
             Beyond Advertising.
@@ -329,14 +380,17 @@ export default function AboutPage() {
 
 
           <p
+
             className="
             mt-8
             max-w-3xl
             mx-auto
-            text-xl
+            text-lg
+            md:text-xl
             text-white/50
             leading-relaxed
             "
+
           >
 
             Adspheria transforms fragmented advertising
@@ -356,24 +410,29 @@ export default function AboutPage() {
 
 
 
-
         {/* NETWORK CORE */}
 
 
+
         <section
+
           className="
-          mt-32
+          mt-36
           flex
           justify-center
           "
+
         >
 
 
           <div
+
             className="
             relative
-            w-[420px]
-            h-[420px]
+            w-[320px]
+            h-[320px]
+            md:w-[460px]
+            md:h-[460px]
             rounded-full
             border
             border-blue-500/20
@@ -381,8 +440,13 @@ export default function AboutPage() {
             items-center
             justify-center
             "
+
           >
 
+
+
+
+            {/* ROTATING RING */}
 
 
             <motion.div
@@ -392,7 +456,7 @@ export default function AboutPage() {
               }}
 
               transition={{
-                duration:30,
+                duration:35,
                 repeat:Infinity,
                 ease:"linear"
               }}
@@ -404,34 +468,213 @@ export default function AboutPage() {
               border
               border-white/10
               "
+
             />
 
 
 
-            <div className="text-center">
+
+
+
+            {/* CENTER LOGO */}
+
+
+
+            <div
+
+              className="
+              relative
+              z-20
+              text-center
+              "
+
+            >
+
+
+
+              <div
+
+                className="
+                relative
+                w-[140px]
+                h-[140px]
+                md:w-[180px]
+                md:h-[180px]
+                mx-auto
+                "
+
+              >
+
+
+
+                <motion.div
+
+                  animate={{
+
+                    scale:[
+                      1,
+                      1.08,
+                      1
+                    ],
+
+                    opacity:[
+                      .25,
+                      .55,
+                      .25
+                    ]
+
+                  }}
+
+                  transition={{
+
+                    duration:5,
+                    repeat:Infinity,
+                    ease:"easeInOut"
+
+                  }}
+
+                  className="
+                  absolute
+                  inset-0
+                  rounded-full
+                  bg-blue-500/20
+                  blur-3xl
+                  "
+
+                />
+
+
+
+
+
+                <Image
+
+                  src="/logo.png"
+
+                  alt="Adspheria"
+
+                  fill
+
+                  className="
+                  object-contain
+                  drop-shadow-[0_0_70px_rgba(59,130,246,.9)]
+                  "
+
+                />
+
+
+              </div>
+
+
+
+
 
 
               <h3
+
                 className="
+                mt-6
                 text-3xl
                 font-semibold
                 "
+
               >
+
                 Adspheria
+
               </h3>
 
 
+
+
+
               <p
+
                 className="
-                mt-3
+                mt-2
+                text-xs
+                md:text-sm
                 text-white/40
+                uppercase
+                tracking-[0.25em]
                 "
+
               >
-                Powering the Visibility Economy
+
+                Visibility Infrastructure
+
               </p>
 
 
+
             </div>
+
+
+
+
+
+
+
+
+            {/* NETWORK NODES */}
+
+
+
+            <NetworkNode
+
+              title="Brands"
+
+              position="
+              -top-5
+              left-1/2
+              -translate-x-1/2
+              "
+
+            />
+
+
+
+            <NetworkNode
+
+              title="Creators"
+
+              position="
+              left-0
+              top-1/2
+              -translate-y-1/2
+              "
+
+            />
+
+
+
+            <NetworkNode
+
+              title="Advertisers"
+
+              position="
+              right-0
+              top-1/2
+              -translate-y-1/2
+              "
+
+            />
+
+
+
+            <NetworkNode
+
+              title="Analytics"
+
+              position="
+              -bottom-5
+              left-1/2
+              -translate-x-1/2
+              "
+
+            />
+
+
 
 
           </div>
@@ -441,9 +684,116 @@ export default function AboutPage() {
 
 
 
+
+
       </div>
 
 
     </main>
+
   );
+
+}
+
+
+
+
+
+
+
+
+function NetworkNode({
+
+  title,
+
+  position,
+
+}:{
+
+  title:string;
+
+  position:string;
+
+}){
+
+
+  return (
+
+    <motion.div
+
+
+      animate={{
+
+        y:[
+          0,
+          -10,
+          0
+        ]
+
+      }}
+
+
+      transition={{
+
+        duration:4,
+        repeat:Infinity,
+        ease:"easeInOut"
+
+      }}
+
+
+      className={`
+      absolute
+      ${position}
+      z-30
+      `}
+
+
+    >
+
+
+
+      <div
+
+        className="
+        px-4
+        md:px-6
+        py-3
+        rounded-2xl
+        border
+        border-white/10
+        bg-white/[0.06]
+        backdrop-blur-xl
+        shadow-xl
+        "
+
+      >
+
+
+
+        <p
+
+          className="
+          text-[10px]
+          md:text-xs
+          uppercase
+          tracking-[0.25em]
+          text-blue-300
+          "
+
+        >
+
+          {title}
+
+        </p>
+
+
+      </div>
+
+
+    </motion.div>
+
+
+  );
+
 }

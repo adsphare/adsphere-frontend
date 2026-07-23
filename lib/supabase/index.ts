@@ -1,4 +1,4 @@
-export { createServerSupabase } from "./server";
-export { createBrowserSupabase } from "./browser";
-export { supabaseAdmin } from "./admin";
+// Browser Supabase client only
+// Safe for Client Components
 
+export { createBrowserSupabase } from "./browser";

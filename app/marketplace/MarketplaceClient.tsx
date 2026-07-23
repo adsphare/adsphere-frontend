@@ -5,11 +5,7 @@ import { useEffect, useState } from "react";
 
 import type {
   Listing,
-} from "@/lib/core/ranking/listingRank";
-
-import { trustScore } from "@/lib/core/trust/trustScore";
-
-
+} from "@/lib/listings/types";
 type RankedListing = Listing & {
   rank: number;
 };
@@ -31,85 +27,100 @@ export default function MarketplaceClient({
 
 
 
+  /*
+  =====================================
+  LOAD TRUST SCORES FROM API
+  =====================================
+  */
+
   useEffect(() => {
 
 
     async function loadTrust() {
 
 
-      const scores =
-        await Promise.all(
-
-          initialListings.map(async (listing) => {
-
-
-            const score =
-              await trustScore.get(
-                listing.user_id
-              );
-
-
-            return {
-              id: listing.user_id,
-              score,
-            };
-
-
-          })
-
+      const userIds =
+        initialListings.map(
+          (item) => item.user_id
         );
 
 
 
-      const map: Record<string, number> = {};
+      if (!userIds.length) return;
 
 
 
-      scores.forEach((item) => {
-
-        map[item.id] =
-          item.score;
-
-      });
+      try {
 
 
+        const response =
+          await fetch("/api/trust", {
 
-      setTrustMap(map);
+            method:"POST",
+
+            headers:{
+              "Content-Type":"application/json",
+            },
+
+            body:JSON.stringify({
+              userIds,
+            }),
+
+          });
+
+
+
+        const data =
+          await response.json();
+
+
+
+        setTrustMap(data);
+
+
+
+      } catch(error){
+
+        console.error(
+          "TRUST LOAD ERROR",
+          error
+        );
+
+      }
 
 
     }
 
 
 
-    if (initialListings.length > 0) {
-
-      loadTrust();
-
-    }
+    loadTrust();
 
 
-  }, [initialListings]);
+  },[initialListings]);
 
 
 
 
 
-  function trustLabel(score: number) {
 
 
-    if (score >= 80)
+  function trustLabel(score:number){
+
+
+    if(score >= 80)
       return "🟢 Verified";
 
 
-    if (score >= 60)
+    if(score >= 60)
       return "🔵 Trusted";
 
 
-    if (score >= 40)
+    if(score >= 40)
       return "🟡 New";
 
 
     return "🔴 Low Trust";
+
 
   }
 
@@ -117,23 +128,26 @@ export default function MarketplaceClient({
 
 
 
+
+
   return (
+
 
     <section
       className="
-        min-h-screen
-        bg-[#050816]
-        text-white
-        px-6
-        py-10
+      min-h-screen
+      bg-[#050816]
+      text-white
+      px-6
+      py-16
       "
     >
 
 
       <div
         className="
-          max-w-7xl
-          mx-auto
+        max-w-7xl
+        mx-auto
         "
       >
 
@@ -141,29 +155,35 @@ export default function MarketplaceClient({
 
         {/* HEADER */}
 
+
         <div
           className="
-            mb-10
+          mb-12
           "
         >
 
+
           <h1
             className="
-              text-4xl
-              font-bold
+            text-5xl
+            font-semibold
+            tracking-tight
             "
           >
-            Marketplace
+            Visibility Marketplace
           </h1>
+
 
 
           <p
             className="
-              text-white/50
-              mt-2
+            mt-4
+            text-white/50
+            text-lg
             "
           >
-            Discover verified visibility spaces.
+            Discover verified advertising spaces,
+            creators, and visibility opportunities.
           </p>
 
 
@@ -173,154 +193,134 @@ export default function MarketplaceClient({
 
 
 
-        {/* EMPTY STATE */}
 
-        {initialListings.length === 0 && (
 
-          <div
-            className="
+
+        {/* EMPTY */}
+
+
+        {
+          initialListings.length === 0 && (
+
+
+            <div
+              className="
+              rounded-3xl
               border
               border-white/10
-              rounded-2xl
+              bg-white/5
               p-10
               text-center
               text-white/50
-            "
-          >
-            No listings available.
-          </div>
+              "
+            >
 
-        )}
+              No visibility spaces available yet.
 
-
+            </div>
 
 
+          )
+        }
 
 
-        {/* LISTINGS GRID */}
+
+
+
+
+
+
+        {/* GRID */}
+
 
         <div
           className="
-            grid
-            md:grid-cols-3
-            gap-6
+          grid
+          md:grid-cols-3
+          gap-8
           "
         >
 
 
 
-          {initialListings.map((item) => {
+          {
+            initialListings.map((item)=>{
+
+
+              const trust =
+                trustMap[item.user_id] ?? 50;
 
 
 
-            const trust =
-              trustMap[item.user_id] ?? 50;
+              return (
 
 
+                <article
 
+                  key={item.id}
 
-            return (
-
-
-              <article
-
-                key={item.id}
-
-                className="
-                  rounded-2xl
+                  className="
+                  rounded-3xl
                   border
                   border-white/10
-                  bg-white/5
+                  bg-white/[0.05]
                   backdrop-blur-xl
-                  p-6
+                  p-7
                   hover:border-blue-500/40
+                  hover:-translate-y-2
                   transition
-                "
-
-              >
-
-
-
-                <div
-                  className="
-                    flex
-                    justify-between
-                    items-start
-                    gap-3
                   "
+
                 >
 
 
-                  <h2
+
+
+
+                  <div
                     className="
-                      text-xl
-                      font-semibold
+                    flex
+                    justify-between
+                    gap-4
                     "
                   >
-                    {item.title}
-                  </h2>
 
 
 
-                  <span
-                    className="
+                    <h2
+                      className="
+                      text-xl
+                      font-semibold
+                      "
+                    >
+
+                      {item.title}
+
+                    </h2>
+
+
+
+                    <span
+                      className="
                       text-xs
+                      whitespace-nowrap
                       px-3
                       py-1
                       rounded-full
                       bg-white/10
-                    "
-                  >
-                    {trustLabel(trust)}
-                  </span>
-
-
-                </div>
-
-
-
-
-
-                <p
-                  className="
-                    text-white/60
-                    mt-3
-                  "
-                >
-                  {item.location}
-                </p>
-
-
-
-
-
-                <div
-                  className="
-                    mt-5
-                    space-y-2
-                    text-sm
-                  "
-                >
-
-
-                  <p
-                    className="
-                      text-white/50
-                    "
-                  >
-
-                    Trust:
-
-                    <span
-                      className="
-                        text-white
-                        ml-2
                       "
                     >
-                      {trust}/100
+
+                      {trustLabel(trust)}
+
                     </span>
 
-                  </p>
+
+
+                  </div>
+
+
+
 
 
 
@@ -328,38 +328,102 @@ export default function MarketplaceClient({
 
                   <p
                     className="
-                      text-blue-400
+                    mt-4
+                    text-white/50
                     "
                   >
 
-                    Visibility Rank:
-
-                    {" "}
-
-                    {item.rank.toFixed(1)}
+                    {item.location}
 
                   </p>
 
 
 
-                </div>
 
 
 
 
 
-                <button
-
-                  onClick={() => {
-
-                    router.push(
-                      `/marketplace/${item.id}`
-                    );
-
-                  }}
-
-                  className="
+                  <div
+                    className="
                     mt-6
+                    space-y-3
+                    text-sm
+                    "
+                  >
+
+
+
+                    <div
+                      className="
+                      flex
+                      justify-between
+                      "
+                    >
+
+                      <span className="text-white/40">
+                        Trust Score
+                      </span>
+
+
+                      <span>
+                        {trust}/100
+                      </span>
+
+
+                    </div>
+
+
+
+
+
+                    <div
+                      className="
+                      flex
+                      justify-between
+                      "
+                    >
+
+                      <span className="text-white/40">
+                        Visibility Rank
+                      </span>
+
+
+                      <span
+                        className="
+                        text-blue-400
+                        "
+                      >
+                        {item.rank.toFixed(1)}
+                      </span>
+
+
+                    </div>
+
+
+
+                  </div>
+
+
+
+
+
+
+
+
+
+                  <button
+
+                    onClick={()=>{
+
+                      router.push(
+                        `/marketplace/${item.id}`
+                      );
+
+                    }}
+
+                    className="
+                    mt-8
                     w-full
                     rounded-xl
                     bg-blue-600
@@ -367,35 +431,44 @@ export default function MarketplaceClient({
                     font-semibold
                     hover:bg-blue-500
                     transition
-                  "
+                    "
 
-                >
+                  >
 
-                  View Space
+                    View Space
 
-                </button>
-
-
+                  </button>
 
 
-              </article>
 
 
-            );
+
+                </article>
 
 
-          })}
+              );
+
+
+            })
+          }
+
 
 
 
         </div>
 
 
+
+
+
       </div>
+
 
 
     </section>
 
+
   );
+
 
 }

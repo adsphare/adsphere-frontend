@@ -16,10 +16,4 @@ export const listingService = {
   trackView(listingId: string, userId?: string) {
     return marketplace.trackView(listingId, userId);
   },
-
-  async getUser() {
-    const { data } = await db.auth.getUser();
-    return data?.user || null;
-  },
 };
-

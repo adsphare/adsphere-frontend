@@ -1,10 +1,7 @@
 export type ListingType =
   | "billboard"
   | "creator"
-  | "screen"
-  | "event"
-  | "ngo"
-  | "business"
+  | "digital"
   | "other";
 
 
@@ -55,3 +52,4 @@ export type Listing = {
 
   boosted: boolean;
 };
+

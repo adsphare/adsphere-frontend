@@ -13,6 +13,7 @@ import {
   type CreateListingInput,
 } from "./validation";
 
+
 /* =========================================
    GET ALL LISTINGS
 ========================================= */
@@ -20,6 +21,7 @@ import {
 export async function fetchListings(): Promise<Listing[]> {
   return await getListings();
 }
+
 
 /* =========================================
    GET SINGLE LISTING
@@ -31,8 +33,9 @@ export async function fetchListing(
   return await getListingById(id);
 }
 
+
 /* =========================================
-   CREATE
+   CREATE LISTING
 ========================================= */
 
 export async function createNewListing(
@@ -41,58 +44,114 @@ export async function createNewListing(
     currency?: string;
   }
 ): Promise<Listing> {
-  const errors = validateListing(input);
+
+
+  console.log(
+    "CREATE LISTING INPUT:",
+    JSON.stringify(input, null, 2)
+  );
+
+
+  const errors =
+    validateListing(input);
+
+
 
   if (errors.length > 0) {
-    throw new Error(errors.join("\n"));
+
+    console.log(
+      "LISTING VALIDATION ERRORS:",
+      errors
+    );
+
+    throw new Error(
+      errors.join("\n")
+    );
+
   }
 
-  return await createListing({
-    user_id: input.user_id,
 
-    title: input.title,
 
-    description: input.description ?? "",
+  const listing =
+    await createListing({
 
-    location: input.location,
+      user_id: input.user_id,
 
-    type: input.type,
+      title: input.title,
 
-    price: input.price,
+      description:
+        input.description ?? "",
 
-    currency: input.currency ?? "ETB",
+      location:
+        input.location,
 
-    status: "active",
+      type:
+        input.type,
 
-    boost_score: 0,
+      price:
+        input.price,
 
-    boost_views: 0,
+      currency:
+        input.currency ?? "ETB",
 
-    boost_clicks: 0,
+      status:
+        "active",
 
-    boosted: false,
+      boost_score:
+        0,
 
-    created_at: new Date().toISOString(),
-  });
+      boost_views:
+        0,
+
+      boost_clicks:
+        0,
+
+      boosted:
+        false,
+
+      created_at:
+        new Date().toISOString(),
+
+    });
+
+
+
+  console.log(
+    "CREATED LISTING:",
+    listing
+  );
+
+
+  return listing;
+
 }
 
+
 /* =========================================
-   UPDATE
+   UPDATE LISTING
 ========================================= */
 
 export async function editListing(
   id: string,
   updates: Partial<Listing>
 ): Promise<Listing> {
-  return await updateListing(id, updates);
+
+  return await updateListing(
+    id,
+    updates
+  );
+
 }
 
+
 /* =========================================
-   DELETE
+   DELETE LISTING
 ========================================= */
 
 export async function removeListing(
   id: string
 ): Promise<void> {
+
   await deleteListing(id);
+
 }

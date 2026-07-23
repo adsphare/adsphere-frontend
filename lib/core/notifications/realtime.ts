@@ -1,8 +1,11 @@
+import { createBrowserSupabase } from "@/lib/supabase";
 
 export function subscribeNotifications(
   userId: string,
   callback: (notif: any) => void
 ) {
+  const db = createBrowserSupabase();
+
   const channel = db
     .channel(`notifications-${userId}`)
     .on(
@@ -23,4 +26,3 @@ export function subscribeNotifications(
     db.removeChannel(channel);
   };
 }
-

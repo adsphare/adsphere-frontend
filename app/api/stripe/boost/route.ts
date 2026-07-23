@@ -16,11 +16,10 @@ export async function POST(req: Request) {
 
     // 💰 centralized pricing
     const priceMap: Record<string, number> = {
-      basic: 500,
-      pro: 1000,
-      premium: 2500,
-    };
-
+  basic: 2500, // cents = $25
+  pro: 7500,   // $75
+  premium: 15000, // $150
+};
     const amount = priceMap[plan];
 
     if (!amount) {
@@ -55,8 +54,8 @@ export async function POST(req: Request) {
         provider: "stripe",
       },
 
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/marketplace?boost=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/marketplace`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/marketplace?boost=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/marketplace`,
     });
 
     return NextResponse.json({
@@ -75,6 +74,7 @@ export async function POST(req: Request) {
     );
   }
 }
+
 
 
 

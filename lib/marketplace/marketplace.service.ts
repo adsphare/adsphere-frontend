@@ -55,25 +55,27 @@ export const marketplaceService = {
     const ranked = await Promise.all(
       listings.map(async (listing: any) => {
         const [rankingResult, stats] = await Promise.all([
-          calculateRank({
-            listingId: listing.id,
-            listing,
-          }),
+          calculateRank(listing),
           analyticsService.getListingStats(listing.id),
         ]);
 
         return {
           ...listing,
+
           rank_score: rankingResult ?? 0,
+
           analytics: stats,
         };
       })
     );
 
     return ranked.sort(
-      (a, b) => (b.rank_score ?? 0) - (a.rank_score ?? 0)
+      (a, b) =>
+        (b.rank_score ?? 0) -
+        (a.rank_score ?? 0)
     );
   },
+
 
   /* =========================
      GET SINGLE LISTING
@@ -81,7 +83,10 @@ export const marketplaceService = {
   async getListing(id: string) {
     const supabase = await createServerSupabase();
 
-    const { data, error } = await supabase
+    const {
+      data,
+      error,
+    } = await supabase
       .from("listings")
       .select(`
         *,
@@ -90,11 +95,15 @@ export const marketplaceService = {
       .eq("id", id)
       .single();
 
+
     if (error) {
       throw new Error(error.message);
     }
 
-    const stats = await analyticsService.getListingStats(id);
+
+    const stats =
+      await analyticsService.getListingStats(id);
+
 
     return {
       ...data,
@@ -102,9 +111,3 @@ export const marketplaceService = {
     };
   },
 };
-
-
-
-
-
-

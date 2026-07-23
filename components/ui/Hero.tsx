@@ -153,45 +153,6 @@ Visibility Operating System
 
 
 
-
-
-<h1
-
-className="
-text-5xl
-sm:text-6xl
-md:text-7xl
-lg:text-[92px]
-font-semibold
-leading-[0.95]
-tracking-[-0.06em]
-"
-
->
-
-
-The World's
-
-
-<span
-className="
-block
-text-blue-500
-"
->
-
-Visibility
-
-</span>
-
-
-Economy
-
-
-</h1>
-
-
-
 <h1
   className="
     text-5xl
