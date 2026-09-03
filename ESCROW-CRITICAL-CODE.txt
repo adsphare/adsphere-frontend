@@ -1,0 +1,2082 @@
+
+
+============================================================
+FILE: .\lib\domain\escrow\escrowEngine.ts
+============================================================
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export type EscrowAction =
+  | "FUND"
+  | "HOLD"
+  | "RELEASE"
+  | "REFUND"
+  | "DISPUTE"
+  | "AUTO_RELEASE";
+
+const COMMISSION_RATE = 0.1;
+
+export async function escrowEngine(
+  action: EscrowAction,
+  escrowId: string
+) {
+  if (!escrowId) {
+    throw new Error("Missing escrowId");
+  }
+
+  const { data: escrow, error: fetchError } = await supabaseAdmin
+    .from("escrow_orders")
+    .select("*")
+    .eq("id", escrowId)
+    .single();
+
+  if (fetchError || !escrow) {
+    throw new Error("Escrow not found");
+  }
+
+  const now = new Date().toISOString();
+
+  switch (action) {
+    case "FUND": {
+      if (escrow.status === "funded") {
+        return escrow;
+      }
+
+      if (escrow.status !== "pending") {
+        throw new Error(
+          `Cannot fund escrow from status: ${escrow.status}`
+        );
+      }
+
+      const autoRelease = new Date();
+      autoRelease.setDate(autoRelease.getDate() + 7);
+
+      const autoReleaseAt = autoRelease.toISOString();
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "funded",
+          funded_at: now,
+          auto_release_at: autoReleaseAt,
+          buyer_confirmation_deadline: autoReleaseAt,
+          is_locked: true,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .eq("status", "pending")
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("💰 Escrow FUNDED:", escrowId);
+
+      return data;
+    }
+
+    case "HOLD": {
+      if (escrow.status === "released") {
+        throw new Error("Cannot hold a released escrow");
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          is_locked: true,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("⏸ Escrow HELD:", escrowId);
+
+      return data;
+    }
+
+    case "RELEASE": {
+      if (escrow.status === "released") {
+        return escrow;
+      }
+
+      if (
+        escrow.status !== "funded" &&
+        escrow.status !== "delivered" &&
+        escrow.status !== "disputed"
+      ) {
+        throw new Error(
+          `Escrow not ready for release from status: ${escrow.status}`
+        );
+      }
+
+      if (escrow.dispute_status === "open" ||
+          escrow.dispute_status === "under_review") {
+        throw new Error("Cannot release escrow while dispute is active");
+      }
+
+      const commission = Number(escrow.amount) * COMMISSION_RATE;
+      const sellerAmount = Number(escrow.amount) - commission;
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now,
+          commission,
+          seller_amount: sellerAmount,
+          is_locked: false,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .in("status", ["funded", "delivered"])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("🏁 Escrow RELEASED:", escrowId);
+
+      return data;
+    }
+
+    case "AUTO_RELEASE": {
+      if (escrow.status === "released") {
+        return escrow;
+      }
+
+      if (
+        escrow.status !== "funded" &&
+        escrow.status !== "delivered"
+      ) {
+        return escrow;
+      }
+
+      if (
+        escrow.dispute_status === "open" ||
+        escrow.dispute_status === "under_review"
+      ) {
+        console.log(
+          "🛑 AUTO RELEASE BLOCKED — active dispute:",
+          escrowId
+        );
+
+        return escrow;
+      }
+
+      if (
+        escrow.auto_release_at &&
+        new Date(escrow.auto_release_at) > new Date()
+      ) {
+        return escrow;
+      }
+
+      const commission = Number(escrow.amount) * COMMISSION_RATE;
+      const sellerAmount = Number(escrow.amount) - commission;
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now,
+          commission,
+          seller_amount: sellerAmount,
+          is_auto_released: true,
+          is_locked: false,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .in("status", ["funded", "delivered"])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("⏱ AUTO RELEASED:", escrowId);
+
+      return data;
+    }
+
+    case "REFUND": {
+      if (escrow.status === "refunded") {
+        return escrow;
+      }
+
+      if (escrow.status === "released") {
+        throw new Error("Cannot refund a released escrow");
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "refunded",
+          refunded_at: now,
+          is_locked: false,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .not("status", "eq", "released")
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("↩️ Escrow REFUNDED:", escrowId);
+
+      return data;
+    }
+
+    case "DISPUTE": {
+      if (escrow.status === "released") {
+        throw new Error("Cannot dispute a released escrow");
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "disputed",
+          dispute_status: "open",
+          disputed_at: now,
+          is_locked: true,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .not("status", "eq", "released")
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("⚠️ Escrow DISPUTED:", escrowId);
+
+      return data;
+    }
+
+    default:
+      throw new Error(`Unknown escrow action: ${action}`);
+  }
+}
+
+
+============================================================
+FILE: .\lib\domain\escrow\escrow.service.ts
+============================================================
+import { escrowEngine } from "./escrowEngine";
+
+/* =========================
+   SAFE ESCROW ACTION API
+========================= */
+
+export async function fundEscrow(escrowId: string) {
+  return escrowEngine("FUND", escrowId);
+}
+
+export async function holdEscrow(escrowId: string) {
+  return escrowEngine("HOLD", escrowId);
+}
+
+/* 🔥 ADD THESE (MISSING EXPORTS) */
+export async function releaseEscrow(escrowId: string) {
+  return escrowEngine("RELEASE", escrowId);
+}
+
+export async function refundEscrow(escrowId: string) {
+  return escrowEngine("REFUND", escrowId);
+}
+
+export async function disputeEscrow(escrowId: string) {
+  return escrowEngine("DISPUTE", escrowId);
+}
+
+
+
+============================================================
+FILE: .\lib\domain\escrow\createEscrow.ts
+============================================================
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export async function createEscrow({
+  listingId,
+  conversationId,
+  buyerId,
+  sellerId,
+  amount,
+  currency = "USD",
+}: {
+  listingId: string;
+  conversationId: string;
+  buyerId: string;
+  sellerId: string;
+  amount: number;
+  currency?: string;
+}) {
+  const { data, error } = await supabaseAdmin
+    .from("escrow_orders")
+    .insert({
+      listing_id: listingId,
+      conversation_id: conversationId,
+      buyer_id: buyerId,
+      seller_id: sellerId,
+      amount,
+      currency,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return data;
+}
+
+
+
+
+
+
+
+============================================================
+FILE: .\lib\domain\escrow\autoReleaseEngine.ts
+============================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+/* =========================
+   AUTO RELEASE ENGINE v5
+   SAFE + IDPOTENT + DISPUTE SAFE
+========================= */
+
+export async function autoReleaseEngine() {
+  const supabase = await createServerSupabase();
+
+  const now = new Date().toISOString();
+
+  // 1. Get ONLY eligible escrows
+  const { data: escrows, error } = await supabase
+    .from("escrow_orders")
+    .select("*")
+    .eq("status", "delivered")
+    .lte("auto_release_at", now);
+
+  if (error) {
+    console.error("Auto release fetch error:", error.message);
+    return { processed: 0, released: 0 };
+  }
+
+  if (!escrows || escrows.length === 0) {
+    return {
+      processed: 0,
+      released: 0,
+    };
+  }
+
+  let released = 0;
+
+  // 2. Process each escrow safely
+  for (const escrow of escrows) {
+    try {
+      // 🚫 BLOCK DISPUTES
+      if (escrow.status === "disputed") continue;
+
+      // 🚫 DOUBLE CHECK (extra safety layer)
+      const { data: fresh } = await supabase
+        .from("escrow_orders")
+        .select("status")
+        .eq("id", escrow.id)
+        .single();
+
+      if (!fresh) continue;
+
+      if (fresh.status !== "delivered") {
+        continue;
+      }
+
+      // 3. SAFE UPDATE (IDEMPOTENT)
+      const { error: updateError } = await supabase
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now,
+        })
+        .eq("id", escrow.id)
+        .eq("status", "delivered"); // prevents double release
+
+      if (updateError) {
+        console.error("Release failed:", escrow.id, updateError.message);
+        continue;
+      }
+
+      released++;
+
+      console.log("💰 AUTO RELEASED:", escrow.id);
+    } catch (err) {
+      console.error("Auto release crash:", err);
+    }
+  }
+
+  return {
+    processed: escrows.length,
+    released,
+  };
+}
+
+
+
+
+
+
+
+============================================================
+FILE: .\lib\domain\escrow\disputeEngine.ts
+============================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export async function disputeEngine({
+  escrowId,
+  userId,
+  reason,
+}: {
+  escrowId: string;
+  userId: string;
+  reason?: string;
+}) {
+  const supabase = await createServerSupabase();
+
+  // 1. Create dispute
+  const { data: dispute, error } = await supabase
+    .from("disputes")
+    .insert({
+      escrow_id: escrowId,
+      opened_by: userId,
+      reason: reason || "No reason provided",
+      status: "open",
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // 2. Lock escrow
+  await supabase
+    .from("escrow_orders")
+    .update({
+      status: "disputed",
+      is_locked: true,
+      disputed_at: new Date().toISOString(),
+    })
+    .eq("id", escrowId);
+
+  return dispute;
+}
+
+
+
+
+
+
+
+============================================================
+FILE: .\lib\dispute\resolveDispute.ts
+============================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+type Action = "refund" | "release";
+
+export async function resolveDispute({
+  disputeId,
+  action,
+  adminId,
+}: {
+  disputeId: string;
+  action: Action;
+  adminId: string;
+}) {
+  const supabase = await createServerSupabase();
+
+  // 1. Get dispute
+  const { data: dispute, error } = await supabase
+    .from("disputes")
+    .select("*")
+    .eq("id", disputeId)
+    .single();
+
+  if (error || !dispute) {
+    throw new Error("Dispute not found");
+  }
+
+  // 2. Safety check (must still be open)
+  if (dispute.status !== "open") {
+    throw new Error("Dispute already resolved");
+  }
+
+  // 3. Get escrow
+  const { data: escrow } = await supabase
+    .from("escrow_orders")
+    .select("*")
+    .eq("id", dispute.escrow_id)
+    .single();
+
+  if (!escrow) {
+    throw new Error("Escrow not found");
+  }
+
+  // 4. Lock escrow during resolution
+  await supabase
+    .from("escrow_orders")
+    .update({
+      is_locked: true,
+      status: "disputed",
+    })
+    .eq("id", escrow.id);
+
+  // 5. Apply decision
+  if (action === "release") {
+    await supabase
+      .from("escrow_orders")
+      .update({
+        status: "released",
+        is_locked: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", escrow.id);
+  }
+
+  if (action === "refund") {
+    await supabase
+      .from("escrow_orders")
+      .update({
+        status: "refunded",
+        is_locked: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", escrow.id);
+  }
+
+  // 6. Close dispute
+  await supabase
+    .from("disputes")
+    .update({
+      status: "resolved",
+      resolution: action,
+      resolved_by: adminId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", disputeId);
+
+  return {
+    success: true,
+    action,
+    escrowId: escrow.id,
+  };
+}
+
+
+
+
+
+
+
+============================================================
+FILE: .\lib\agreements\agreementEngine.ts
+============================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+/* =========================
+   TYPES (STANDARDIZED - FIXED)
+========================= */
+export type AgreementAction =
+  | "CREATE"
+  | "ACCEPT"
+  | "REJECT"
+  | "COMPLETE"
+  | "CANCEL";
+
+/* =========================
+   AGREEMENT ENGINE
+========================= */
+export async function agreementEngine(
+  action: AgreementAction,
+  agreementId: string
+) {
+  const supabase = await createServerSupabase();
+
+  // 1. Fetch agreement
+  const { data: agreement, error } = await supabase
+    .from("agreements")
+    .select("*")
+    .eq("id", agreementId)
+    .single();
+
+  if (error || !agreement) {
+    throw new Error("Agreement not found");
+  }
+
+  /* =========================
+     ACCEPT → CREATE ESCROW
+  ========================= */
+  if (action === "ACCEPT") {
+    if (agreement.status !== "pending") {
+      throw new Error("Already processed");
+    }
+
+    // update agreement
+    const { data: updated, error: updateError } = await supabase
+      .from("agreements")
+      .update({
+        status: "active",
+        accepted_at: new Date().toISOString(),
+      })
+      .eq("id", agreementId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    // prevent duplicate escrow
+    const { data: existing } = await supabase
+      .from("escrow_orders")
+      .select("id")
+      .eq("agreement_id", agreementId)
+      .maybeSingle();
+
+    if (existing) {
+      return { agreement: updated, escrow: existing };
+    }
+
+    // create escrow
+    const { data: escrow, error: escrowError } = await supabase
+      .from("escrow_orders")
+      .insert({
+        agreement_id: agreementId,
+        conversation_id: agreement.conversation_id,
+        buyer_id: agreement.buyer_id,
+        seller_id: agreement.seller_id,
+        amount: agreement.price,
+        currency: agreement.currency ?? "usd",
+        status: "pending",
+        is_locked: true,
+        auto_release_at: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toISOString(),
+      })
+      .select()
+      .single();
+
+    if (escrowError) throw escrowError;
+
+    return { agreement: updated, escrow };
+  }
+
+  /* =========================
+     REJECT
+  ========================= */
+  if (action === "REJECT") {
+    const { data, error: rejectError } = await supabase
+      .from("agreements")
+      .update({
+        status: "rejected",
+      })
+      .eq("id", agreementId)
+      .select()
+      .single();
+
+    if (rejectError) throw rejectError;
+
+    return data;
+  }
+
+  /* =========================
+     COMPLETE
+  ========================= */
+  if (action === "COMPLETE") {
+    const { data, error: completeError } = await supabase
+      .from("agreements")
+      .update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", agreementId)
+      .select()
+      .single();
+
+    if (completeError) throw completeError;
+
+    return data;
+  }
+
+  /* =========================
+     CREATE (FUTURE USE)
+  ========================= */
+  if (action === "CREATE") {
+    throw new Error("Create flow not implemented yet");
+  }
+
+  /* =========================
+     CANCEL
+  ========================= */
+  if (action === "CANCEL") {
+    const { data, error: cancelError } = await supabase
+      .from("agreements")
+      .update({
+        status: "cancelled",
+      })
+      .eq("id", agreementId)
+      .select()
+      .single();
+
+    if (cancelError) throw cancelError;
+
+    return data;
+  }
+
+  throw new Error("Invalid action");
+}
+
+
+MISSING FILE: .\lib\services\escrowService.ts
+
+
+============================================================
+FILE: .\app\api\stripe\webhook\route.ts
+============================================================
+import Stripe from "stripe";
+import { NextResponse } from "next/server";
+
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+import { agreementEngine } from "@/lib/agreements/agreementEngine";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export const runtime = "nodejs";
+
+/* =========================
+   ENV CHECK
+========================= */
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Missing STRIPE_SECRET_KEY");
+}
+
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error("Missing STRIPE_WEBHOOK_SECRET");
+}
+
+/* =========================
+   STRIPE INIT
+========================= */
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+/* =========================
+   TYPES
+========================= */
+type MetaType = "escrow" | "agreement" | "boost";
+
+/* =========================
+   WEBHOOK
+========================= */
+export async function POST(req: Request) {
+  try {
+    const body = await req.text();
+    const signature = req.headers.get("stripe-signature");
+
+    if (!signature) {
+      return NextResponse.json(
+        { error: "Missing stripe signature" },
+        { status: 400 }
+      );
+    }
+
+    /* =========================
+       VERIFY EVENT
+    ========================= */
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+    } catch (err) {
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 400 }
+      );
+    }
+
+    const eventId = event.id;
+
+    /* =========================
+       IDEMPOTENCY CHECK
+    ========================= */
+    const { data: existing } = await supabaseAdmin
+      .from("stripe_events")
+      .select("id")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json({ received: true });
+    }
+
+    await supabaseAdmin.from("stripe_events").insert({
+      id: eventId,
+      type: event.type,
+      created_at: new Date().toISOString(),
+    });
+
+    /* =========================
+       CHECKOUT SUCCESS
+    ========================= */
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      const type = session.metadata?.type as MetaType;
+
+      /* =========================
+         ESCROW FLOW
+      ========================= */
+      if (type === "escrow") {
+        const escrowId = session.metadata?.escrowId;
+
+        if (!escrowId) {
+          console.error("Missing escrowId");
+          return NextResponse.json({ received: true });
+        }
+
+        await escrowEngine("FUND", escrowId);
+
+        console.log("💰 ESCROW RELEASED:", escrowId);
+      }
+
+      /* =========================
+         AGREEMENT FLOW
+      ========================= */
+      if (type === "agreement") {
+        const agreementId = session.metadata?.agreementId;
+
+        if (!agreementId) {
+          console.error("Missing agreementId");
+          return NextResponse.json({ received: true });
+        }
+
+        await agreementEngine("ACCEPT", agreementId);
+
+        console.log("📄 AGREEMENT ACCEPTED:", agreementId);
+      }
+
+      /* =========================
+         BOOST FLOW
+      ========================= */
+      if (type === "boost") {
+        const listingId = session.metadata?.listingId;
+
+        if (!listingId) {
+          console.error("Missing listingId");
+          return NextResponse.json({ received: true });
+        }
+
+        await supabaseAdmin
+          .from("listings")
+          .update({
+            boosted: true,
+            boosted_at: new Date().toISOString(),
+          })
+          .eq("id", listingId);
+
+        console.log("🚀 BOOST ACTIVATED:", listingId);
+      }
+    }
+
+    /* =========================
+       PAYMENT FAILED
+    ========================= */
+    if (event.type === "payment_intent.payment_failed") {
+      console.log("❌ Payment failed:", event.id);
+    }
+
+    /* =========================
+       REFUND
+    ========================= */
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      console.log("🔁 Refund:", charge.id);
+    }
+
+    return NextResponse.json({ received: true });
+  } catch (err: any) {
+    console.error("Webhook error:", err.message);
+
+    return NextResponse.json(
+      { error: "Webhook failed" },
+      { status: 500 }
+    );
+  }
+}
+
+
+============================================================
+FILE: .\app\api\stripe\release\route.ts
+============================================================
+import Stripe from "stripe";
+import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+export async function POST(req: Request) {
+  try {
+    const supabase = await createServerSupabase();
+
+    const { conversationId } = await req.json();
+
+    if (!conversationId) {
+      return NextResponse.json(
+        { error: "Missing conversationId" },
+        { status: 400 }
+      );
+    }
+
+    // 1. GET CONVERSATION
+    const { data: convo, error } = await supabase
+      .from("conversations")
+      .select("*")
+      .eq("id", conversationId)
+      .single();
+
+    if (error || !convo) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 }
+      );
+    }
+
+    if (convo.escrow_status !== "locked") {
+      return NextResponse.json(
+        { error: "Escrow not locked" },
+        { status: 400 }
+      );
+    }
+
+    // 2. GET SELLER STRIPE ACCOUNT
+    const { data: seller, error: sellerError } = await supabase
+      .from("profiles")
+      .select("stripe_account_id")
+      .eq("id", convo.seller_id)
+      .single();
+
+    if (sellerError || !seller?.stripe_account_id) {
+      return NextResponse.json(
+        { error: "Seller not connected to Stripe" },
+        { status: 400 }
+      );
+    }
+
+    // 3. SAFE AMOUNT HANDLING
+    const amountInCents = Math.round(Number(convo.amount));
+
+    if (!amountInCents || amountInCents <= 0) {
+      return NextResponse.json(
+        { error: "Invalid amount" },
+        { status: 400 }
+      );
+    }
+
+    // 4. STRIPE TRANSFER (ESCROW RELEASE)
+    const transfer = await stripe.transfers.create({
+      amount: amountInCents,
+      currency: "usd",
+      destination: seller.stripe_account_id,
+      description: `Payout for conversation ${conversationId}`,
+    });
+
+    // 5. UPDATE DATABASE
+    await supabase
+      .from("conversations")
+      .update({
+        escrow_status: "released",
+        released_at: new Date().toISOString(),
+        stripe_transfer_id: transfer.id,
+      })
+      .eq("id", conversationId);
+
+    return NextResponse.json({
+      success: true,
+      transferId: transfer.id,
+    });
+  } catch (err: any) {
+    console.error("ESCROW RELEASE ERROR:", err);
+
+    return NextResponse.json(
+      {
+        error: err?.message || "Release failed",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
+
+
+
+
+
+
+============================================================
+FILE: .\app\api\escrow\refund\route.ts
+============================================================
+import { NextResponse } from "next/server";
+import { refundEscrow } from "@/lib/domain/escrow/escrow.service";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
+
+export async function POST(req: Request) {
+  try {
+    const supabase = await createServerSupabase();
+
+    // 1. AUTHENTICATION
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // 2. AUTHORIZATION
+    // profiles.role is the canonical Adspheria admin source of truth.
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (
+      profileError ||
+      !profile ||
+      profile.role !== "admin"
+    ) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    // 3. REQUEST VALIDATION
+    const body = await req.json();
+    const { escrowId } = body;
+
+    if (
+      typeof escrowId !== "string" ||
+      !escrowId.trim()
+    ) {
+      return NextResponse.json(
+        { error: "Missing escrowId" },
+        { status: 400 }
+      );
+    }
+
+    // 4. CANONICAL ESCROW REFUND
+    const result = await refundEscrow(escrowId);
+
+    return NextResponse.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    console.error("Escrow refund API error:", err);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Internal Server Error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
+============================================================
+FILE: .\app\api\escrow\auto-release\route.ts
+============================================================
+import { NextResponse } from "next/server";
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
+
+export async function POST(req: Request) {
+  try {
+    const supabase = await createServerSupabase();
+
+    // 1. AUTHENTICATION
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // 2. AUTHORIZATION
+    // profiles.role is the canonical Adspheria admin source of truth.
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (
+      profileError ||
+      !profile ||
+      profile.role !== "admin"
+    ) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    // 3. REQUEST VALIDATION
+    const body = await req.json();
+    const { escrowId } = body;
+
+    if (
+      typeof escrowId !== "string" ||
+      !escrowId.trim()
+    ) {
+      return NextResponse.json(
+        { error: "Missing escrowId" },
+        { status: 400 }
+      );
+    }
+
+    // 4. CANONICAL ESCROW STATE TRANSITION
+    const result = await escrowEngine(
+      "RELEASE",
+      escrowId
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    console.error("Escrow auto-release API error:", err);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Internal Server Error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
+============================================================
+FILE: .\app\api\dispute\create\route.ts
+============================================================
+import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export async function POST(req: Request) {
+  const supabase = await createServerSupabase();
+
+  const { escrowId, reason } = await req.json();
+
+  const { data: escrow } = await supabase
+    .from("escrow_orders")
+    .select("*")
+    .eq("id", escrowId)
+    .single();
+
+  if (!escrow) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const { data: dispute } = await supabase
+    .from("disputes")
+    .insert({
+      escrow_id: escrowId,
+      reason,
+      status: "open",
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  await supabase
+    .from("escrow_orders")
+    .update({
+      status: "disputed",
+      is_locked: true,
+    })
+    .eq("id", escrowId);
+
+  return NextResponse.json(dispute);
+}
+
+
+
+
+
+
+
+============================================================
+FILE: .\app\api\cron\auto-release\route.ts
+============================================================
+import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+
+export const runtime = "nodejs";
+
+/* runs every X minutes via cron (Vercel / server) */
+export async function GET() {
+  const supabase = await createServerSupabase();
+
+  const now = new Date().toISOString();
+
+  const { data: escrows } = await supabase
+    .from("escrow_orders")
+    .select("id")
+    .eq("status", "delivered")
+    .lte("auto_release_at", now);
+
+  for (const e of escrows || []) {
+    await escrowEngine("AUTO_RELEASE", e.id);
+  }
+
+  return NextResponse.json({
+    processed: escrows?.length || 0,
+  });
+}
+
+
+
+
+
+
+
+============================================================
+FILE: .\app\api\cron\route.ts
+============================================================
+import { NextResponse } from "next/server";
+import { cronService } from "@/lib/services/cron.service";
+
+export const runtime = "nodejs";
+
+export async function GET(req: Request) {
+  const auth = req.headers.get("authorization");
+  const secret = process.env.CRON_SECRET;
+
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unauthorized",
+      },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const boosts = await cronService.expireBoosts();
+    const escrow = await cronService.autoReleaseEscrows();
+
+    return NextResponse.json({
+      success: true,
+      boosts,
+      escrow,
+    });
+  } catch (error) {
+    console.error("Cron process failed:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Cron processing failed",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
+============================================================
+FILE: .\app\admin\escrow\action\route.ts
+============================================================
+import { NextResponse } from "next/server";
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+/* =========================
+   ESCROW ADMIN API (SECURE)
+========================= */
+export async function POST(req: Request) {
+  try {
+    const supabase = await createServerSupabase();
+
+    // 1. AUTH CHECK
+    const { data: userRes } = await supabase.auth.getUser();
+    const user = userRes?.user;
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // 2. ADMIN ROLE CHECK
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role !== "admin") {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    // 3. REQUEST BODY
+    const body = await req.json();
+
+    const { action, escrowId } = body;
+
+    if (!action || !escrowId) {
+      return NextResponse.json(
+        { error: "Missing action or escrowId" },
+        { status: 400 }
+      );
+    }
+
+    // 4. VALID ACTIONS (IMPORTANT SAFETY LAYER)
+    const allowedActions = [
+      "RELEASE",
+      "REFUND",
+      "DISPUTE",
+      "LOCK",
+      "FUND",
+    ];
+
+    if (!allowedActions.includes(action)) {
+      return NextResponse.json(
+        { error: "Invalid action" },
+        { status: 400 }
+      );
+    }
+
+    // 5. EXECUTE ESCROW ENGINE
+    const result = await escrowEngine(action, escrowId);
+
+    return NextResponse.json({
+      success: true,
+      data: result,
+    });
+  } catch (err: any) {
+    console.error("Escrow API error:", err);
+
+    return NextResponse.json(
+      {
+        error: err.message || "Internal Server Error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
+
+
+
+
+
+============================================================
+FILE: .\app\admin\disputes\page.tsx
+============================================================
+"use client";
+
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
+
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+
+/* =========================
+   TYPES
+========================= */
+
+type Dispute = {
+  id: string;
+  escrow_id: string;
+  conversation_id: string;
+  buyer_id: string;
+  seller_id: string;
+  reason: string;
+  status:
+    | "open"
+    | "under_review"
+    | "resolved";
+  created_at: string;
+};
+
+
+type Escrow = {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+};
+
+
+/* =========================
+   PAGE
+========================= */
+
+export default function AdminDisputesPage() {
+
+  const supabase = useMemo(
+    () => createBrowserSupabase(),
+    []
+  );
+
+
+  const [
+    disputes,
+    setDisputes,
+  ] = useState<Dispute[]>([]);
+
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+
+  const [
+    selectedEscrow,
+    setSelectedEscrow,
+  ] = useState<Escrow | null>(null);
+
+
+
+  /* =========================
+     LOAD DISPUTES
+  ========================= */
+
+  const load = useCallback(
+    async () => {
+
+      setLoading(true);
+
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("disputes")
+        .select("*")
+        .order(
+          "created_at",
+          {
+            ascending: false,
+          }
+        );
+
+
+      if (error) {
+
+        console.error(
+          "Load disputes error:",
+          error.message
+        );
+
+        setDisputes([]);
+        setLoading(false);
+
+        return;
+      }
+
+
+      setDisputes(
+        (data as Dispute[]) || []
+      );
+
+
+      setLoading(false);
+
+    },
+    [supabase]
+  );
+
+
+
+  useEffect(() => {
+
+    void load();
+
+  }, [load]);
+
+
+
+
+  /* =========================
+     LOAD ESCROW
+  ========================= */
+
+  const loadEscrow = useCallback(
+    async (
+      escrowId: string
+    ) => {
+
+      try {
+
+        const {
+          data,
+          error,
+        } = await supabase
+          .from("escrow_orders")
+          .select("*")
+          .eq(
+            "id",
+            escrowId
+          )
+          .single();
+
+
+
+        if (error) {
+
+          console.error(
+            "Escrow load error:",
+            error.message
+          );
+
+
+          setSelectedEscrow(null);
+
+          return;
+        }
+
+
+
+        setSelectedEscrow(
+          data as Escrow
+        );
+
+
+      } catch (err) {
+
+        console.error(
+          "Unexpected escrow error:",
+          err
+        );
+
+
+        setSelectedEscrow(null);
+
+      }
+
+    },
+    [supabase]
+  );
+
+
+
+
+  /* =========================
+     RESOLVE DISPUTE
+  ========================= */
+
+  const resolveDispute = useCallback(
+    async (
+      dispute: Dispute,
+      action:
+        | "release"
+        | "refund"
+        | "review"
+    ) => {
+
+
+      try {
+
+
+        if (
+          action === "release"
+        ) {
+
+          await supabase
+            .from("escrow_orders")
+            .update({
+              status: "released",
+              is_locked: false,
+            })
+            .eq(
+              "id",
+              dispute.escrow_id
+            );
+
+        }
+
+
+
+        if (
+          action === "refund"
+        ) {
+
+          await supabase
+            .from("escrow_orders")
+            .update({
+              status: "refunded",
+              is_locked: false,
+            })
+            .eq(
+              "id",
+              dispute.escrow_id
+            );
+
+        }
+
+
+
+        await supabase
+          .from("disputes")
+          .update({
+
+            status:
+              action === "review"
+                ? "under_review"
+                : "resolved",
+
+          })
+          .eq(
+            "id",
+            dispute.id
+          );
+
+
+
+        await load();
+
+
+
+      } catch (err) {
+
+        console.error(
+          "Resolution error:",
+          err
+        );
+
+      }
+
+
+    },
+    [
+      supabase,
+      load,
+    ]
+  );
+
+
+
+
+  /* =========================
+     LOADING
+  ========================= */
+
+  if (loading) {
+
+    return (
+
+      <div
+        className="
+        min-h-screen
+        flex
+        items-center
+        justify-center
+        bg-[#050816]
+        text-white
+        "
+      >
+
+        Loading disputes...
+
+      </div>
+
+    );
+
+  }
+
+
+
+
+  /* =========================
+     UI
+  ========================= */
+
+  return (
+
+    <div
+      className="
+      min-h-screen
+      bg-[#050816]
+      text-white
+      p-6
+      "
+    >
+
+
+      <h1
+        className="
+        text-3xl
+        font-bold
+        mb-6
+        "
+      >
+
+        ⚖️ Dispute Resolution Center
+
+      </h1>
+
+
+
+      <div
+        className="
+        grid
+        grid-cols-1
+        md:grid-cols-2
+        gap-6
+        "
+      >
+
+
+
+        <div
+          className="
+          space-y-3
+          "
+        >
+
+
+          {disputes.map(
+            (d) => (
+
+            <div
+              key={d.id}
+              className="
+              p-4
+              border
+              border-white/10
+              bg-white/5
+              rounded-xl
+              "
+            >
+
+
+              <p
+                className="
+                text-sm
+                text-white/60
+                "
+              >
+
+                Dispute ID:
+                {" "}
+                {d.id.slice(0,8)}
+
+              </p>
+
+
+
+              <p
+                className="
+                text-xs
+                text-white/40
+                mt-1
+                "
+              >
+
+                Reason:
+                {" "}
+                {d.reason}
+
+              </p>
+
+
+
+              <p
+                className="
+                text-xs
+                mt-1
+                "
+              >
+
+                Status:
+
+                {" "}
+
+                <span
+                  className="
+                  text-yellow-400
+                  "
+                >
+
+                  {d.status.toUpperCase()}
+
+                </span>
+
+              </p>
+
+
+
+              <div
+                className="
+                flex
+                gap-2
+                mt-3
+                flex-wrap
+                "
+              >
+
+
+                <button
+                  onClick={() =>
+                    loadEscrow(
+                      d.escrow_id
+                    )
+                  }
+                  className="
+                  px-2
+                  py-1
+                  text-xs
+                  bg-white/10
+                  rounded
+                  "
+                >
+
+                  View Escrow
+
+                </button>
+
+
+
+                <button
+                  onClick={() =>
+                    resolveDispute(
+                      d,
+                      "release"
+                    )
+                  }
+                  className="
+                  px-2
+                  py-1
+                  text-xs
+                  bg-green-600
+                  rounded
+                  "
+                >
+
+                  Release
+
+                </button>
+
+
+
+                <button
+                  onClick={() =>
+                    resolveDispute(
+                      d,
+                      "refund"
+                    )
+                  }
+                  className="
+                  px-2
+                  py-1
+                  text-xs
+                  bg-red-600
+                  rounded
+                  "
+                >
+
+                  Refund
+
+                </button>
+
+
+
+                <button
+                  onClick={() =>
+                    resolveDispute(
+                      d,
+                      "review"
+                    )
+                  }
+                  className="
+                  px-2
+                  py-1
+                  text-xs
+                  bg-yellow-500
+                  text-black
+                  rounded
+                  "
+                >
+
+                  Mark Review
+
+                </button>
+
+
+              </div>
+
+
+            </div>
+
+          ))}
+
+
+        </div>
+
+
+
+
+
+        <div
+          className="
+          p-4
+          border
+          border-white/10
+          bg-white/5
+          rounded-xl
+          h-fit
+          "
+        >
+
+
+          <h2
+            className="
+            font-bold
+            mb-3
+            "
+          >
+
+            Escrow Inspector
+
+          </h2>
+
+
+
+          {!selectedEscrow ? (
+
+            <p
+              className="
+              text-white/40
+              text-sm
+              "
+            >
+
+              Select a dispute to view escrow details
+
+            </p>
+
+
+          ) : (
+
+
+            <div
+              className="
+              space-y-2
+              text-sm
+              "
+            >
+
+              <p>
+
+                💰 Amount:
+                {" "}
+
+                <span
+                  className="
+                  text-green-400
+                  "
+                >
+
+                  ${selectedEscrow.amount}
+
+                </span>
+
+              </p>
+
+
+
+              <p>
+
+                📊 Status:
+                {" "}
+
+                <span
+                  className="
+                  text-blue-400
+                  "
+                >
+
+                  {selectedEscrow.status}
+
+                </span>
+
+              </p>
+
+
+
+              <p>
+
+                💱 Currency:
+                {" "}
+                {selectedEscrow.currency}
+
+              </p>
+
+
+            </div>
+
+
+          )}
+
+
+        </div>
+
+
+      </div>
+
+
+    </div>
+
+  );
+
+}

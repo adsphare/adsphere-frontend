@@ -1,0 +1,89 @@
+ADSPHERIA FINANCIAL AUTHORITY AUDIT V5
+Generated: 2026-08-31 23:54:49
+Project: C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend
+
+======================================================================
+SEARCH: escrow_orders
+======================================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:145: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:216: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:235: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:32: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:74: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:14: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\create\route.ts:10: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\create\route.ts:31: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:56: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:67: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:34: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:45: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:66: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:15: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:42: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\createEscrow.ts:19: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\disputeEngine.ts:30: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:22: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:51: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:78: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:118: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:174: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:206: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:231: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:30: .from("escrow_orders")
+
+======================================================================
+SEARCH: escrows
+======================================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:13: const { data: escrows } = await supabase
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:19: for (const e of escrows || []) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:24: processed: escrows?.length || 0,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\route.ts:22: const escrow = await cronService.autoReleaseEscrows();
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:13: // 1. Get ONLY eligible escrows
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:14: const { data: escrows, error } = await supabase
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:25: if (!escrows || escrows.length === 0) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:35: for (const escrow of escrows) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:77: processed: escrows.length,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:25: async autoReleaseEscrows() {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:29: const { data: escrows, error } = await supabase
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:44: for (const escrow of escrows ?? []) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:60: processed: escrows?.length ?? 0,
+
+======================================================================
+SEARCH: payments
+======================================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\chapa\initialize\route.ts:273: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\components\layout\Footer.tsx:51: Payments
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\ai\types.ts:16: payments: any[];
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\payment.service.ts:13: export const paymentService = {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\payment.service.ts:22: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\payment.service.ts:44: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\payment.service.ts:65: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\requestPayment.ts:31: const response = await fetch("/api/payments/request", {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\events\eventTypes.ts:30: ESCROW / PAYMENTS
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\events\eventTypes.ts:65: /* PAYMENTS */
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\stripe\webhook\handler.ts:6: } from "@/lib/payments/webhookGuard";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\stripe\webhook\handler.ts:38: 3. ONLY HANDLE SUCCESS PAYMENTS
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\payment.service.ts:22: export const paymentService = {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\state\store.ts:8: * - boost system state (future payments)
+
+======================================================================
+SEARCH: payment_events
+======================================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\webhookGuard.ts:10: .from("payment_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\webhookGuard.ts:29: await supabase.from("payment_events").insert({
+
+======================================================================
+SEARCH: stripe_events
+======================================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\webhook\route.ts:70: .from("stripe_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\webhook\route.ts:79: await supabaseAdmin.from("stripe_events").insert({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\stripe\webhook\handler.ts:13: .from("stripe_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\stripe\webhook\handler.ts:24: await supabaseAdmin.from("stripe_events").insert({
+
+======================================================================
+SEARCH: transactions
+======================================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\about\page.tsx:267: text:"Verified participants, transparent transactions, and systems designed for confidence."
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:114: Manage all escrow transactions

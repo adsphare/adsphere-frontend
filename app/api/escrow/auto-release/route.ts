@@ -1,41 +1,80 @@
 import { NextResponse } from "next/server";
-import { releaseEscrow } from "@/lib/domain/escrow/escrow.service";
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
 import { createServerSupabase } from "@/lib/supabase/server";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
-  const supabase = await createServerSupabase();
+  try {
+    const supabase = await createServerSupabase();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    // 1. AUTHENTICATION
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // 2. AUTHORIZATION
+    // profiles.role is the canonical Adspheria admin source of truth.
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (
+      profileError ||
+      !profile ||
+      profile.role !== "admin"
+    ) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    // 3. REQUEST VALIDATION
+    const body = await req.json();
+    const { escrowId } = body;
+
+    if (
+      typeof escrowId !== "string" ||
+      !escrowId.trim()
+    ) {
+      return NextResponse.json(
+        { error: "Missing escrowId" },
+        { status: 400 }
+      );
+    }
+
+    // 4. CANONICAL ESCROW STATE TRANSITION
+    const result = await escrowEngine(
+      "RELEASE",
+      escrowId
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    console.error("Escrow auto-release API error:", err);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Internal Server Error",
+      },
+      { status: 500 }
+    );
   }
-
-  // TODO: replace with real admin role check
-  const isAdmin = user.email?.includes("admin");
-
-  if (!isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const body = await req.json();
-  const { escrowId } = body;
-
-  if (!escrowId) {
-    return NextResponse.json({ error: "Missing escrowId" }, { status: 400 });
-  }
-
-  await releaseEscrow(escrowId);
-
-  return NextResponse.json({
-    success: true,
-    message: "Escrow released",
-  });
 }
-
-
-
-
-

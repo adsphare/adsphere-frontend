@@ -101,7 +101,7 @@ export async function POST(req: Request) {
           return NextResponse.json({ received: true });
         }
 
-        await escrowEngine("RELEASE", escrowId);
+        await escrowEngine("FUND", escrowId);
 
         console.log("💰 ESCROW RELEASED:", escrowId);
       }

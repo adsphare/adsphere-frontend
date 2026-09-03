@@ -1,0 +1,1857 @@
+ADSPHERIA FINANCIAL SOURCE AUDIT V6
+Generated: 2026-09-01 00:00:22
+
+======================================================================
+FILE: lib\domain\escrow\escrowEngine.ts
+======================================================================
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export type EscrowAction =
+  | "FUND"
+  | "HOLD"
+  | "RELEASE"
+  | "REFUND"
+  | "DISPUTE"
+  | "AUTO_RELEASE";
+
+const COMMISSION_RATE = 0.1;
+
+export async function escrowEngine(
+  action: EscrowAction,
+  escrowId: string
+) {
+  if (!escrowId) {
+    throw new Error("Missing escrowId");
+  }
+
+  const { data: escrow, error: fetchError } = await supabaseAdmin
+    .from("escrow_orders")
+    .select("*")
+    .eq("id", escrowId)
+    .single();
+
+  if (fetchError || !escrow) {
+    throw new Error("Escrow not found");
+  }
+
+  const now = new Date().toISOString();
+
+  switch (action) {
+    case "FUND": {
+      if (escrow.status === "funded") {
+        return escrow;
+      }
+
+      if (escrow.status !== "pending") {
+        throw new Error(
+          `Cannot fund escrow from status: ${escrow.status}`
+        );
+      }
+
+      const autoRelease = new Date();
+      autoRelease.setDate(autoRelease.getDate() + 7);
+
+      const autoReleaseAt = autoRelease.toISOString();
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "funded",
+          funded_at: now,
+          auto_release_at: autoReleaseAt,
+          buyer_confirmation_deadline: autoReleaseAt,
+          is_locked: true,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .eq("status", "pending")
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("💰 Escrow FUNDED:", escrowId);
+
+      return data;
+    }
+
+    case "HOLD": {
+      if (escrow.status === "released") {
+        throw new Error("Cannot hold a released escrow");
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          is_locked: true,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("⏸ Escrow HELD:", escrowId);
+
+      return data;
+    }
+
+    case "RELEASE": {
+      if (escrow.status === "released") {
+        return escrow;
+      }
+
+      if (
+        escrow.status !== "funded" &&
+        escrow.status !== "delivered" &&
+        escrow.status !== "disputed"
+      ) {
+        throw new Error(
+          `Escrow not ready for release from status: ${escrow.status}`
+        );
+      }
+
+      if (escrow.dispute_status === "open" ||
+          escrow.dispute_status === "under_review") {
+        throw new Error("Cannot release escrow while dispute is active");
+      }
+
+      const commission = Number(escrow.amount) * COMMISSION_RATE;
+      const sellerAmount = Number(escrow.amount) - commission;
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now,
+          commission,
+          seller_amount: sellerAmount,
+          is_locked: false,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .in("status", ["funded", "delivered"])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("🏁 Escrow RELEASED:", escrowId);
+
+      return data;
+    }
+
+    case "AUTO_RELEASE": {
+      if (escrow.status === "released") {
+        return escrow;
+      }
+
+      if (
+        escrow.status !== "funded" &&
+        escrow.status !== "delivered"
+      ) {
+        return escrow;
+      }
+
+      if (
+        escrow.dispute_status === "open" ||
+        escrow.dispute_status === "under_review"
+      ) {
+        console.log(
+          "🛑 AUTO RELEASE BLOCKED — active dispute:",
+          escrowId
+        );
+
+        return escrow;
+      }
+
+      if (
+        escrow.auto_release_at &&
+        new Date(escrow.auto_release_at) > new Date()
+      ) {
+        return escrow;
+      }
+
+      const commission = Number(escrow.amount) * COMMISSION_RATE;
+      const sellerAmount = Number(escrow.amount) - commission;
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now,
+          commission,
+          seller_amount: sellerAmount,
+          is_auto_released: true,
+          is_locked: false,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .in("status", ["funded", "delivered"])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("⏱ AUTO RELEASED:", escrowId);
+
+      return data;
+    }
+
+    case "REFUND": {
+      if (escrow.status === "refunded") {
+        return escrow;
+      }
+
+      if (escrow.status === "released") {
+        throw new Error("Cannot refund a released escrow");
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "refunded",
+          refunded_at: now,
+          is_locked: false,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .not("status", "eq", "released")
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("↩️ Escrow REFUNDED:", escrowId);
+
+      return data;
+    }
+
+    case "DISPUTE": {
+      if (escrow.status === "released") {
+        throw new Error("Cannot dispute a released escrow");
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "disputed",
+          dispute_status: "open",
+          disputed_at: now,
+          is_locked: true,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .not("status", "eq", "released")
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("⚠️ Escrow DISPUTED:", escrowId);
+
+      return data;
+    }
+
+    default:
+      throw new Error(`Unknown escrow action: ${action}`);
+  }
+}
+
+======================================================================
+FILE: lib\domain\escrow\createEscrow.ts
+======================================================================
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export async function createEscrow({
+  listingId,
+  conversationId,
+  buyerId,
+  sellerId,
+  amount,
+  currency = "USD",
+}: {
+  listingId: string;
+  conversationId: string;
+  buyerId: string;
+  sellerId: string;
+  amount: number;
+  currency?: string;
+}) {
+  const { data, error } = await supabaseAdmin
+    .from("escrow_orders")
+    .insert({
+      listing_id: listingId,
+      conversation_id: conversationId,
+      buyer_id: buyerId,
+      seller_id: sellerId,
+      amount,
+      currency,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return data;
+}
+
+
+
+
+
+
+======================================================================
+FILE: lib\domain\escrow\autoReleaseEngine.ts
+======================================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+/* =========================
+   AUTO RELEASE ENGINE v5
+   SAFE + IDPOTENT + DISPUTE SAFE
+========================= */
+
+export async function autoReleaseEngine() {
+  const supabase = await createServerSupabase();
+
+  const now = new Date().toISOString();
+
+  // 1. Get ONLY eligible escrows
+  const { data: escrows, error } = await supabase
+    .from("escrow_orders")
+    .select("*")
+    .eq("status", "delivered")
+    .lte("auto_release_at", now);
+
+  if (error) {
+    console.error("Auto release fetch error:", error.message);
+    return { processed: 0, released: 0 };
+  }
+
+  if (!escrows || escrows.length === 0) {
+    return {
+      processed: 0,
+      released: 0,
+    };
+  }
+
+  let released = 0;
+
+  // 2. Process each escrow safely
+  for (const escrow of escrows) {
+    try {
+      // 🚫 BLOCK DISPUTES
+      if (escrow.status === "disputed") continue;
+
+      // 🚫 DOUBLE CHECK (extra safety layer)
+      const { data: fresh } = await supabase
+        .from("escrow_orders")
+        .select("status")
+        .eq("id", escrow.id)
+        .single();
+
+      if (!fresh) continue;
+
+      if (fresh.status !== "delivered") {
+        continue;
+      }
+
+      // 3. SAFE UPDATE (IDEMPOTENT)
+      const { error: updateError } = await supabase
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now,
+        })
+        .eq("id", escrow.id)
+        .eq("status", "delivered"); // prevents double release
+
+      if (updateError) {
+        console.error("Release failed:", escrow.id, updateError.message);
+        continue;
+      }
+
+      released++;
+
+      console.log("💰 AUTO RELEASED:", escrow.id);
+    } catch (err) {
+      console.error("Auto release crash:", err);
+    }
+  }
+
+  return {
+    processed: escrows.length,
+    released,
+  };
+}
+
+
+
+
+
+
+======================================================================
+FILE: lib\domain\escrow\disputeEngine.ts
+======================================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export async function disputeEngine({
+  escrowId,
+  userId,
+  reason,
+}: {
+  escrowId: string;
+  userId: string;
+  reason?: string;
+}) {
+  const supabase = await createServerSupabase();
+
+  // 1. Create dispute
+  const { data: dispute, error } = await supabase
+    .from("disputes")
+    .insert({
+      escrow_id: escrowId,
+      opened_by: userId,
+      reason: reason || "No reason provided",
+      status: "open",
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // 2. Lock escrow
+  await supabase
+    .from("escrow_orders")
+    .update({
+      status: "disputed",
+      is_locked: true,
+      disputed_at: new Date().toISOString(),
+    })
+    .eq("id", escrowId);
+
+  return dispute;
+}
+
+
+
+
+
+
+======================================================================
+FILE: lib\dispute\resolveDispute.ts
+======================================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+type Action = "refund" | "release";
+
+export async function resolveDispute({
+  disputeId,
+  action,
+  adminId,
+}: {
+  disputeId: string;
+  action: Action;
+  adminId: string;
+}) {
+  const supabase = await createServerSupabase();
+
+  // 1. Get dispute
+  const { data: dispute, error } = await supabase
+    .from("disputes")
+    .select("*")
+    .eq("id", disputeId)
+    .single();
+
+  if (error || !dispute) {
+    throw new Error("Dispute not found");
+  }
+
+  // 2. Safety check (must still be open)
+  if (dispute.status !== "open") {
+    throw new Error("Dispute already resolved");
+  }
+
+  // 3. Get escrow
+  const { data: escrow } = await supabase
+    .from("escrow_orders")
+    .select("*")
+    .eq("id", dispute.escrow_id)
+    .single();
+
+  if (!escrow) {
+    throw new Error("Escrow not found");
+  }
+
+  // 4. Lock escrow during resolution
+  await supabase
+    .from("escrow_orders")
+    .update({
+      is_locked: true,
+      status: "disputed",
+    })
+    .eq("id", escrow.id);
+
+  // 5. Apply decision
+  if (action === "release") {
+    await supabase
+      .from("escrow_orders")
+      .update({
+        status: "released",
+        is_locked: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", escrow.id);
+  }
+
+  if (action === "refund") {
+    await supabase
+      .from("escrow_orders")
+      .update({
+        status: "refunded",
+        is_locked: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", escrow.id);
+  }
+
+  // 6. Close dispute
+  await supabase
+    .from("disputes")
+    .update({
+      status: "resolved",
+      resolution: action,
+      resolved_by: adminId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", disputeId);
+
+  return {
+    success: true,
+    action,
+    escrowId: escrow.id,
+  };
+}
+
+
+
+
+
+
+======================================================================
+FILE: lib\agreements\agreementEngine.ts
+======================================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+/* =========================
+   TYPES (STANDARDIZED - FIXED)
+========================= */
+export type AgreementAction =
+  | "CREATE"
+  | "ACCEPT"
+  | "REJECT"
+  | "COMPLETE"
+  | "CANCEL";
+
+/* =========================
+   AGREEMENT ENGINE
+========================= */
+export async function agreementEngine(
+  action: AgreementAction,
+  agreementId: string
+) {
+  const supabase = await createServerSupabase();
+
+  // 1. Fetch agreement
+  const { data: agreement, error } = await supabase
+    .from("agreements")
+    .select("*")
+    .eq("id", agreementId)
+    .single();
+
+  if (error || !agreement) {
+    throw new Error("Agreement not found");
+  }
+
+  /* =========================
+     ACCEPT → CREATE ESCROW
+  ========================= */
+  if (action === "ACCEPT") {
+    if (agreement.status !== "pending") {
+      throw new Error("Already processed");
+    }
+
+    // update agreement
+    const { data: updated, error: updateError } = await supabase
+      .from("agreements")
+      .update({
+        status: "active",
+        accepted_at: new Date().toISOString(),
+      })
+      .eq("id", agreementId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    // prevent duplicate escrow
+    const { data: existing } = await supabase
+      .from("escrow_orders")
+      .select("id")
+      .eq("agreement_id", agreementId)
+      .maybeSingle();
+
+    if (existing) {
+      return { agreement: updated, escrow: existing };
+    }
+
+    // create escrow
+    const { data: escrow, error: escrowError } = await supabase
+      .from("escrow_orders")
+      .insert({
+        agreement_id: agreementId,
+        conversation_id: agreement.conversation_id,
+        buyer_id: agreement.buyer_id,
+        seller_id: agreement.seller_id,
+        amount: agreement.price,
+        currency: agreement.currency ?? "usd",
+        status: "pending",
+        is_locked: true,
+        auto_release_at: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toISOString(),
+      })
+      .select()
+      .single();
+
+    if (escrowError) throw escrowError;
+
+    return { agreement: updated, escrow };
+  }
+
+  /* =========================
+     REJECT
+  ========================= */
+  if (action === "REJECT") {
+    const { data, error: rejectError } = await supabase
+      .from("agreements")
+      .update({
+        status: "rejected",
+      })
+      .eq("id", agreementId)
+      .select()
+      .single();
+
+    if (rejectError) throw rejectError;
+
+    return data;
+  }
+
+  /* =========================
+     COMPLETE
+  ========================= */
+  if (action === "COMPLETE") {
+    const { data, error: completeError } = await supabase
+      .from("agreements")
+      .update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", agreementId)
+      .select()
+      .single();
+
+    if (completeError) throw completeError;
+
+    return data;
+  }
+
+  /* =========================
+     CREATE (FUTURE USE)
+  ========================= */
+  if (action === "CREATE") {
+    throw new Error("Create flow not implemented yet");
+  }
+
+  /* =========================
+     CANCEL
+  ========================= */
+  if (action === "CANCEL") {
+    const { data, error: cancelError } = await supabase
+      .from("agreements")
+      .update({
+        status: "cancelled",
+      })
+      .eq("id", agreementId)
+      .select()
+      .single();
+
+    if (cancelError) throw cancelError;
+
+    return data;
+  }
+
+  throw new Error("Invalid action");
+}
+
+
+======================================================================
+FILE: lib\services\cron.service.ts
+======================================================================
+
+import { createServerSupabase } from "@/lib/supabase/server";
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+
+export const cronService = {
+  async expireBoosts() {
+    const supabase = await createServerSupabase();
+
+    const { data, error } = await supabase.rpc(
+      "expire_expired_boosts"
+    );
+
+    if (error) {
+      throw new Error(
+        `Boost expiration failed: ${error.message}`
+      );
+    }
+
+    return {
+      processed: Number(data?.processed ?? 0),
+      expired: Number(data?.expired ?? 0),
+    };
+  },
+
+  async autoReleaseEscrows() {
+    const supabase = await createServerSupabase();
+    const now = new Date().toISOString();
+
+    const { data: escrows, error } = await supabase
+      .from("escrow_orders")
+      .select("id")
+      .eq("status", "delivered")
+      .lte("auto_release_at", now);
+
+    if (error) {
+      throw new Error(
+        `Auto-release fetch failed: ${error.message}`
+      );
+    }
+
+    let released = 0;
+    let failed = 0;
+
+    for (const escrow of escrows ?? []) {
+      try {
+        await escrowEngine("AUTO_RELEASE", escrow.id);
+        released++;
+      } catch (error) {
+        failed++;
+
+        console.error(
+          "Auto-release failed:",
+          escrow.id,
+          error instanceof Error ? error.message : error
+        );
+      }
+    }
+
+    return {
+      processed: escrows?.length ?? 0,
+      released,
+      failed,
+    };
+  },
+};
+
+======================================================================
+FILE: app\api\cron\auto-release\route.ts
+======================================================================
+import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+
+export const runtime = "nodejs";
+
+/* runs every X minutes via cron (Vercel / server) */
+export async function GET() {
+  const supabase = await createServerSupabase();
+
+  const now = new Date().toISOString();
+
+  const { data: escrows } = await supabase
+    .from("escrow_orders")
+    .select("id")
+    .eq("status", "delivered")
+    .lte("auto_release_at", now);
+
+  for (const e of escrows || []) {
+    await escrowEngine("AUTO_RELEASE", e.id);
+  }
+
+  return NextResponse.json({
+    processed: escrows?.length || 0,
+  });
+}
+
+
+
+
+
+
+======================================================================
+FILE: app\api\chapa\initialize\route.ts
+======================================================================
+import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
+
+
+export async function POST(req: Request) {
+
+  try {
+
+    const supabase =
+      await createServerSupabase();
+
+
+    const CHAPA_SECRET_KEY =
+      process.env.CHAPA_SECRET_KEY;
+
+
+    const SITE_URL =
+      process.env.NEXT_PUBLIC_APP_URL;
+
+
+
+    if (!CHAPA_SECRET_KEY || !SITE_URL) {
+
+      return NextResponse.json(
+        {
+          success:false,
+          message:"Missing Chapa environment variables",
+        },
+        {
+          status:500,
+        }
+      );
+
+    }
+
+
+
+    const {
+      listingId,
+      plan,
+      email,
+    } = await req.json();
+
+
+
+
+    if (!listingId || !plan) {
+
+      return NextResponse.json(
+        {
+          success:false,
+          message:"Missing listingId or plan",
+        },
+        {
+          status:400,
+        }
+      );
+
+    }
+
+
+
+
+    // AUTH USER
+
+    const {
+      data:{
+        user
+      }
+
+    } =
+      await supabase.auth.getUser();
+
+
+
+
+    if (!user) {
+
+      return NextResponse.json(
+        {
+          success:false,
+          message:"Unauthorized",
+        },
+        {
+          status:401,
+        }
+      );
+
+    }
+
+
+
+
+    // ENSURE PUBLIC USER EXISTS
+
+    const {
+      data: existingUser
+    } =
+      await supabase
+      .from("users")
+      .select("id")
+      .eq(
+        "id",
+        user.id
+      )
+      .maybeSingle();
+
+
+
+
+    if (!existingUser) {
+
+
+      const {
+        error:userCreateError
+      } =
+        await supabase
+        .from("users")
+        .insert({
+
+          id:user.id,
+
+          email:user.email,
+
+          role:"user",
+
+          trust_level:"new",
+
+          is_verified:false,
+
+        });
+
+
+
+      if(userCreateError){
+
+        console.error(
+          "USER CREATE ERROR:",
+          userCreateError
+        );
+
+
+        return NextResponse.json(
+          {
+            success:false,
+            message:userCreateError.message,
+          },
+          {
+            status:500,
+          }
+        );
+
+      }
+
+    }
+
+
+
+
+
+    // CHECK LISTING
+
+    const {
+      data:listing,
+      error:listingError
+
+    } =
+      await supabase
+      .from("listings")
+      .select(
+        "id,user_id,title"
+      )
+      .eq(
+        "id",
+        listingId
+      )
+      .single();
+
+
+
+
+    if(listingError || !listing){
+
+      return NextResponse.json(
+        {
+          success:false,
+          message:"Listing not found",
+        },
+        {
+          status:404,
+        }
+      );
+
+    }
+
+
+
+
+    if(listing.user_id !== user.id){
+
+      return NextResponse.json(
+        {
+          success:false,
+          message:"You don't own this listing",
+        },
+        {
+          status:403,
+        }
+      );
+
+    }
+
+
+
+
+
+    // BOOST PLANS
+
+    const prices:Record<string,number> = {
+
+      basic:2000,
+
+      pro:5000,
+
+      premium:10000,
+
+    };
+
+
+
+
+    const amount =
+      prices[plan];
+
+
+
+
+    if(!amount){
+
+      return NextResponse.json(
+        {
+          success:false,
+          message:"Invalid boost plan",
+        },
+        {
+          status:400,
+        }
+      );
+
+    }
+
+
+
+
+
+    const tx_ref =
+      `boost_${listingId}_${Date.now()}`;
+
+
+
+
+
+
+    // PAYMENT RECORD
+
+    const {
+      error:paymentError
+
+    } =
+      await supabase
+      .from("payments")
+      .insert({
+
+        user_id:user.id,
+
+        amount,
+
+        currency:"ETB",
+
+        provider:"chapa",
+
+        status:"pending",
+
+        legacy_transaction_ref:
+          tx_ref,
+
+        provider_reference:
+          tx_ref,
+
+      });
+
+
+
+
+
+    if(paymentError){
+
+      console.error(
+        "PAYMENT INSERT ERROR:",
+        paymentError
+      );
+
+
+      return NextResponse.json(
+        {
+          success:false,
+          message:paymentError.message,
+        },
+        {
+          status:500,
+        }
+      );
+
+    }
+
+
+
+
+
+
+
+    // CHAPA INITIALIZE
+
+    const chapaResponse =
+      await fetch(
+        "https://api.chapa.co/v1/transaction/initialize",
+        {
+
+          method:"POST",
+
+          headers:{
+
+            Authorization:
+              `Bearer ${CHAPA_SECRET_KEY}`,
+
+            "Content-Type":
+              "application/json",
+
+          },
+
+
+          body:JSON.stringify({
+
+            amount,
+
+            currency:"ETB",
+
+            email:
+              email ||
+              user.email ||
+              "customer@adspheria.com",
+
+
+            first_name:
+              "Adspheria",
+
+
+            last_name:
+              "Customer",
+
+
+            tx_ref,
+
+
+            callback_url:
+              `${SITE_URL}/api/chapa/verify`,
+
+
+            return_url:
+              `${SITE_URL}/boost/success`,
+
+
+
+            customization:{
+
+              title:
+                "Adspheria Boost",
+
+
+              description:
+                `${plan} visibility boost for ${listing.title}`,
+
+            },
+
+          }),
+
+        }
+      );
+
+
+
+
+
+
+    const chapaData =
+      await chapaResponse.json();
+
+
+
+
+
+
+    if(
+      !chapaResponse.ok ||
+      !chapaData?.data?.checkout_url
+    ){
+
+      console.error(
+        "CHAPA ERROR:",
+        chapaData
+      );
+
+
+      return NextResponse.json(
+        {
+          success:false,
+
+          message:
+            "Chapa initialization failed",
+
+          raw:
+            chapaData,
+
+        },
+        {
+          status:500,
+        }
+      );
+
+    }
+
+
+
+
+
+
+    return NextResponse.json({
+
+      success:true,
+
+      checkout_url:
+        chapaData.data.checkout_url,
+
+      tx_ref,
+
+    });
+
+
+
+
+  } catch(error:any){
+
+
+    console.error(
+      "CHAPA INITIALIZE ERROR:",
+      error
+    );
+
+
+    return NextResponse.json(
+      {
+        success:false,
+
+        message:
+          error.message ||
+          "Server error",
+      },
+      {
+        status:500,
+      }
+    );
+
+  }
+
+}
+
+======================================================================
+FILE: app\api\stripe\webhook\route.ts
+======================================================================
+import Stripe from "stripe";
+import { NextResponse } from "next/server";
+
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+import { agreementEngine } from "@/lib/agreements/agreementEngine";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export const runtime = "nodejs";
+
+/* =========================
+   ENV CHECK
+========================= */
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Missing STRIPE_SECRET_KEY");
+}
+
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error("Missing STRIPE_WEBHOOK_SECRET");
+}
+
+/* =========================
+   STRIPE INIT
+========================= */
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+/* =========================
+   TYPES
+========================= */
+type MetaType = "escrow" | "agreement" | "boost";
+
+/* =========================
+   WEBHOOK
+========================= */
+export async function POST(req: Request) {
+  try {
+    const body = await req.text();
+    const signature = req.headers.get("stripe-signature");
+
+    if (!signature) {
+      return NextResponse.json(
+        { error: "Missing stripe signature" },
+        { status: 400 }
+      );
+    }
+
+    /* =========================
+       VERIFY EVENT
+    ========================= */
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+    } catch (err) {
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 400 }
+      );
+    }
+
+    const eventId = event.id;
+
+    /* =========================
+       IDEMPOTENCY CHECK
+    ========================= */
+    const { data: existing } = await supabaseAdmin
+      .from("stripe_events")
+      .select("id")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json({ received: true });
+    }
+
+    await supabaseAdmin.from("stripe_events").insert({
+      id: eventId,
+      type: event.type,
+      created_at: new Date().toISOString(),
+    });
+
+    /* =========================
+       CHECKOUT SUCCESS
+    ========================= */
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      const type = session.metadata?.type as MetaType;
+
+      /* =========================
+         ESCROW FLOW
+      ========================= */
+      if (type === "escrow") {
+        const escrowId = session.metadata?.escrowId;
+
+        if (!escrowId) {
+          console.error("Missing escrowId");
+          return NextResponse.json({ received: true });
+        }
+
+        await escrowEngine("FUND", escrowId);
+
+        console.log("💰 ESCROW RELEASED:", escrowId);
+      }
+
+      /* =========================
+         AGREEMENT FLOW
+      ========================= */
+      if (type === "agreement") {
+        const agreementId = session.metadata?.agreementId;
+
+        if (!agreementId) {
+          console.error("Missing agreementId");
+          return NextResponse.json({ received: true });
+        }
+
+        await agreementEngine("ACCEPT", agreementId);
+
+        console.log("📄 AGREEMENT ACCEPTED:", agreementId);
+      }
+
+      /* =========================
+         BOOST FLOW
+      ========================= */
+      if (type === "boost") {
+        const listingId = session.metadata?.listingId;
+
+        if (!listingId) {
+          console.error("Missing listingId");
+          return NextResponse.json({ received: true });
+        }
+
+        await supabaseAdmin
+          .from("listings")
+          .update({
+            boosted: true,
+            boosted_at: new Date().toISOString(),
+          })
+          .eq("id", listingId);
+
+        console.log("🚀 BOOST ACTIVATED:", listingId);
+      }
+    }
+
+    /* =========================
+       PAYMENT FAILED
+    ========================= */
+    if (event.type === "payment_intent.payment_failed") {
+      console.log("❌ Payment failed:", event.id);
+    }
+
+    /* =========================
+       REFUND
+    ========================= */
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      console.log("🔁 Refund:", charge.id);
+    }
+
+    return NextResponse.json({ received: true });
+  } catch (err: any) {
+    console.error("Webhook error:", err.message);
+
+    return NextResponse.json(
+      { error: "Webhook failed" },
+      { status: 500 }
+    );
+  }
+}
+
+======================================================================
+FILE: lib\infrastructure\stripe\webhook\handler.ts
+======================================================================
+import Stripe from "stripe";
+import { stripe } from "@/lib/infrastructure/stripe/client";
+import { STRIPE_WEBHOOK_EVENTS } from "@/lib/infrastructure/stripe/webhook/events";
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export async function handleStripeWebhook(event: Stripe.Event) {
+  /* =========================
+     1. IDEMPOTENCY CHECK
+  ========================= */
+
+  const { data: existing } = await supabaseAdmin
+    .from("stripe_events")
+    .select("id")
+    .eq("id", event.id)
+    .maybeSingle();
+
+  if (existing) {
+    console.log("🔁 Duplicate event ignored:", event.id);
+    return;
+  }
+
+  /* Save event immediately */
+  await supabaseAdmin.from("stripe_events").insert({
+    id: event.id,
+    type: event.type,
+    processed_at: new Date().toISOString(),
+  });
+
+  /* =========================
+     2. BUSINESS LOGIC
+  ========================= */
+
+  switch (event.type) {
+    case STRIPE_WEBHOOK_EVENTS.CHECKOUT_SESSION_COMPLETED: {
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      const escrowId = session.metadata?.escrowId;
+
+      if (!escrowId) {
+        console.error("Missing escrowId");
+        return;
+      }
+
+      await escrowEngine("FUND", escrowId);
+
+      console.log("💰 Escrow funded:", escrowId);
+      break;
+    }
+
+    case STRIPE_WEBHOOK_EVENTS.PAYMENT_INTENT_FAILED: {
+      console.log("❌ Payment failed");
+      break;
+    }
+
+    case STRIPE_WEBHOOK_EVENTS.REFUND_CREATED: {
+      console.log("🔁 Refund processed");
+      break;
+    }
+
+    default:
+      console.log("Unhandled event:", event.type);
+  }
+}
+
+
+
+
+
+
+======================================================================
+FILE: lib\payments\stripe\webhook\handler.ts
+======================================================================
+import { stripe } from "@/lib/infrastructure/stripe/client";
+import { NextResponse } from "next/server";
+import {
+  isEventProcessed,
+  markEventProcessed,
+} from "@/lib/payments/webhookGuard";
+import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+
+export async function handleStripeWebhook(req: Request) {
+  const body = await req.text();
+  const signature = req.headers.get("stripe-signature")!;
+  const secret = process.env.STRIPE_WEBHOOK_SECRET!;
+
+  let event;
+
+  /* =========================
+     1. VERIFY STRIPE SIGNATURE
+  ========================= */
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, secret);
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Invalid signature" },
+      { status: 400 }
+    );
+  }
+
+  const eventId = event.id;
+
+  /* =========================
+     2. IDEMPOTENCY CHECK
+  ========================= */
+  if (await isEventProcessed(eventId)) {
+    return NextResponse.json({ ok: true, skipped: true });
+  }
+
+  /* =========================
+     3. ONLY HANDLE SUCCESS PAYMENTS
+  ========================= */
+  if (event.type !== "checkout.session.completed") {
+    return NextResponse.json({ ok: true, ignored: true });
+  }
+
+  const session = event.data.object as {
+    metadata?: {
+      escrowId?: string;
+    };
+  };
+
+  const escrowId = session.metadata?.escrowId;
+
+  if (!escrowId) {
+    return NextResponse.json(
+      { error: "Missing escrowId" },
+      { status: 400 }
+    );
+  }
+
+  /* =========================
+     4. LOCK EVENT (BEFORE BUSINESS LOGIC)
+  ========================= */
+  await markEventProcessed({
+    id: eventId,
+    provider: "stripe",
+    escrowId,
+    raw: event,
+  });
+
+  /* =========================
+     5. BUSINESS LOGIC (ESCROW FUND)
+  ========================= */
+  await escrowEngine("FUND", escrowId);
+
+  return NextResponse.json({ ok: true });
+}
+
+
+======================================================================
+FILE: lib\payments\webhookGuard.ts
+======================================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+/**
+ * Prevent duplicate webhook processing
+ */
+export async function isEventProcessed(eventId: string) {
+  const supabase = await createServerSupabase();
+
+  const { data } = await supabase
+    .from("payment_events")
+    .select("id")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  return !!data;
+}
+
+/**
+ * Lock event BEFORE processing (VERY IMPORTANT)
+ */
+export async function markEventProcessed(input: {
+  id: string;
+  provider: "stripe" | "chapa";
+  raw?: any;
+  escrowId?: string;
+}) {
+  const supabase = await createServerSupabase();
+
+  await supabase.from("payment_events").insert({
+    id: input.id,
+    provider: input.provider,
+    raw: input.raw,
+    escrow_id: input.escrowId,
+  });
+}
+
+
+
+
+
+
+======================================================================
+FILE: lib\services\payment.service.ts
+======================================================================
+import Stripe from "stripe";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+// ✅ SAFE Stripe init (NO apiVersion → fixes your TS error)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+export type BoostPlan = "basic" | "pro" | "premium";
+
+export interface CreateStripeBoostInput {
+  listingId: string;
+  plan: BoostPlan;
+  successUrl: string;
+  cancelUrl: string;
+}
+
+export interface ChapaVerifyInput {
+  tx_ref: string;
+  listingId: string;
+  plan: BoostPlan;
+}
+
+export const paymentService = {
+  /* =========================
+     STRIPE BOOST
+  ========================= */
+  async createStripeBoostSession(input: CreateStripeBoostInput) {
+    const priceMap: Record<BoostPlan, number> = {
+      basic: 500,
+      pro: 1000,
+      premium: 2500,
+    };
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Boost (${input.plan})`,
+            },
+            unit_amount: priceMap[input.plan],
+          },
+          quantity: 1,
+        },
+      ],
+
+      metadata: {
+        listingId: input.listingId,
+        plan: input.plan,
+        provider: "stripe",
+      },
+
+      success_url: input.successUrl,
+      cancel_url: input.cancelUrl,
+    });
+
+    return {
+      url: session.url,
+      id: session.id,
+    };
+  },
+
+  /* =========================
+     CHAPA VERIFY
+  ========================= */
+  async verifyChapaPayment(input: ChapaVerifyInput) {
+    const CHAPA_SECRET_KEY = process.env.CHAPA_SECRET_KEY!;
+
+    const res = await fetch(
+      `https://api.chapa.co/v1/transaction/verify/${input.tx_ref}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${CHAPA_SECRET_KEY}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("Chapa verification request failed");
+    }
+
+    const data = await res.json();
+
+    const isPaid =
+      data?.status === "success" &&
+      data?.data?.status === "success";
+
+    if (!isPaid) {
+      throw new Error("Payment not confirmed");
+    }
+
+    return {
+      success: true,
+      data,
+    };
+  },
+};
+
+
+
+
+
+
+
+======================================================================
+FILE: lib\application\payments\payment.service.ts
+======================================================================
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export type PaymentProvider = "stripe" | "chapa";
+
+export type CreatePaymentIntentInput = {
+  campaignId: string;
+  provider: PaymentProvider;
+};
+
+/* =========================
+   PAYMENT DOMAIN SERVICE
+========================= */
+export const paymentService = {
+  /* -------------------------
+     CREATE PAYMENT INTENT
+  ------------------------- */
+  async createIntent(input: CreatePaymentIntentInput) {
+    const supabase = await createServerSupabase();
+
+    // 1. Create internal payment record first
+    const { data: payment, error } = await supabase
+      .from("payments")
+      .insert({
+        campaign_id: input.campaignId,
+        provider: input.provider,
+        status: "pending",
+        amount: 0,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // 2. Simulate external provider response
+    const externalId =
+      input.provider === "stripe"
+        ? `stripe_${Date.now()}`
+        : `chapa_${Date.now()}`;
+
+    // 3. Update payment with provider reference
+    await supabase
+      .from("payments")
+      .update({
+        provider_ref: externalId,
+      })
+      .eq("id", payment.id);
+
+    return {
+      paymentId: payment.id,
+      provider: input.provider,
+      providerRef: externalId,
+      status: "pending",
+    };
+  },
+
+  /* -------------------------
+     VERIFY PAYMENT
+  ------------------------- */
+  async verifyPayment(paymentId: string) {
+    const supabase = await createServerSupabase();
+
+    const { data: payment, error } = await supabase
+      .from("payments")
+      .update({
+        status: "paid",
+        paid_at: new Date().toISOString(),
+      })
+      .eq("id", paymentId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return payment;
+  },
+};
+
+
+
+
+
+

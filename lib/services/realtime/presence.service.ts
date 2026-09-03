@@ -1,5 +1,6 @@
-import { createBrowserSupabase } from "@/lib/supabase/browser";
+﻿import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+
 const supabase = createBrowserSupabase();
 
 type PresenceUser = {
@@ -33,10 +34,9 @@ export const presenceService = {
     user: PresenceUser;
     onUpdate?: (event: PresenceEvent) => void;
   }) {
-    // Remove existing channel with same topic
     const existing = supabase
       .getChannels()
-      .find((c) => c.topic === `realtime:${channelName}`);
+      .find((channel) => channel.topic === `realtime:${channelName}`);
 
     if (existing) {
       void supabase.removeChannel(existing);
@@ -72,12 +72,18 @@ export const presenceService = {
         });
       })
       .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
+        if (status !== "SUBSCRIBED") {
+          return;
+        }
+
+        try {
           await channel.track({
             user_id: user.id,
             name: user.name ?? "User",
             online_at: new Date().toISOString(),
           });
+        } catch (error) {
+          console.error("Failed to track presence:", error);
         }
       });
 
@@ -87,8 +93,8 @@ export const presenceService = {
       async destroy() {
         try {
           await channel.untrack();
-        } catch {
-          // ignore
+        } catch (error) {
+          console.warn("Failed to untrack presence:", error);
         }
 
         await supabase.removeChannel(channel);
@@ -96,8 +102,3 @@ export const presenceService = {
     };
   },
 };
-
-
-
-
-

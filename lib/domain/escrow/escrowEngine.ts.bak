@@ -1,0 +1,377 @@
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export type EscrowAction =
+  | "FUND"
+  | "HOLD"
+  | "RELEASE"
+  | "REFUND"
+  | "DISPUTE"
+  | "AUTO_RELEASE";
+
+const PLATFORM_FEE_RATE = 0.1;
+const AUTO_RELEASE_DAYS = 7;
+
+type EscrowOrder = {
+  id: string;
+  amount: number;
+  currency: string | null;
+  status:
+    | "pending"
+    | "funded"
+    | "delivered"
+    | "disputed"
+    | "released"
+    | "refunded";
+  dispute_status:
+    | "none"
+    | "open"
+    | "under_review"
+    | "resolved"
+    | "rejected";
+  delivery_status:
+    | "pending"
+    | "submitted"
+    | "approved"
+    | "rejected";
+  auto_release_at: string | null;
+  funded_at: string | null;
+  delivered_at: string | null;
+  confirmed_at: string | null;
+  buyer_confirmation_deadline: string | null;
+  released_at: string | null;
+  refunded_at: string | null;
+  disputed_at: string | null;
+  commission: number | null;
+  seller_amount: number | null;
+  is_auto_released: boolean;
+  is_locked: boolean;
+};
+
+/**
+ * Canonical Adspheria escrow state machine.
+ *
+ * IMPORTANT:
+ * - escrow_orders is the canonical escrow table.
+ * - All financial state changes happen server-side with supabaseAdmin.
+ * - Payment success FUNDS the escrow; it does NOT release it.
+ * - Release is only allowed after delivery/confirmation or auto-release.
+ * - Disputes block release.
+ */
+export async function escrowEngine(
+  action: EscrowAction,
+  escrowId: string
+) {
+  if (!escrowId) {
+    throw new Error("Missing escrowId");
+  }
+
+  const { data: escrow, error: fetchError } = await supabaseAdmin
+    .from("escrow_orders")
+    .select("*")
+    .eq("id", escrowId)
+    .single();
+
+  if (fetchError || !escrow) {
+    throw new Error("Escrow not found");
+  }
+
+  const order = escrow as EscrowOrder;
+  const now = new Date();
+
+  switch (action) {
+    /* =====================================================
+       FUND
+       Payment has successfully funded the escrow.
+    ===================================================== */
+    case "FUND": {
+      if (order.status === "funded") {
+        return order;
+      }
+
+      if (order.status === "released") {
+        throw new Error("Cannot fund a released escrow");
+      }
+
+      if (order.status === "refunded") {
+        throw new Error("Cannot fund a refunded escrow");
+      }
+
+      if (order.status === "disputed") {
+        throw new Error("Cannot fund a disputed escrow");
+      }
+
+      const autoReleaseAt = new Date(now);
+      autoReleaseAt.setDate(
+        autoReleaseAt.getDate() + AUTO_RELEASE_DAYS
+      );
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "funded",
+          funded_at: now.toISOString(),
+          auto_release_at: autoReleaseAt.toISOString(),
+          buyer_confirmation_deadline:
+            autoReleaseAt.toISOString(),
+          is_locked: true,
+          is_auto_released: false,
+          updated_at: now.toISOString(),
+        })
+        .eq("id", escrowId)
+        .in("status", ["pending", "funded"])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to fund escrow: ${error.message}`);
+      }
+
+      console.log("💰 Escrow FUNDED:", escrowId);
+
+      return data;
+    }
+
+    /* =====================================================
+       HOLD
+       escrow_orders has no "held" status.
+       Therefore HOLD means financial lock, not a fake status.
+    ===================================================== */
+    case "HOLD": {
+      if (
+        order.status === "released" ||
+        order.status === "refunded"
+      ) {
+        throw new Error(
+          `Cannot hold escrow in ${order.status} state`
+        );
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          is_locked: true,
+          updated_at: now.toISOString(),
+        })
+        .eq("id", escrowId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to hold escrow: ${error.message}`);
+      }
+
+      console.log("⏸ Escrow HELD:", escrowId);
+
+      return data;
+    }
+
+    /* =====================================================
+       RELEASE
+       Manual/approved release.
+    ===================================================== */
+    case "RELEASE": {
+      if (order.status === "released") {
+        return order;
+      }
+
+      if (order.status === "refunded") {
+        throw new Error("Cannot release a refunded escrow");
+      }
+
+      if (order.status === "disputed") {
+        throw new Error("Cannot release a disputed escrow");
+      }
+
+      if (order.dispute_status !== "none") {
+        throw new Error("Cannot release an escrow with a dispute");
+      }
+
+      const canRelease =
+        order.status === "delivered" ||
+        order.delivery_status === "approved" ||
+        order.confirmed_at !== null;
+
+      if (!canRelease) {
+        throw new Error(
+          "Escrow cannot be released before delivery or buyer confirmation"
+        );
+      }
+
+      const commission =
+        Number(order.amount) * PLATFORM_FEE_RATE;
+
+      const sellerAmount =
+        Number(order.amount) - commission;
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now.toISOString(),
+          commission,
+          seller_amount: sellerAmount,
+          is_locked: false,
+          is_auto_released: false,
+          updated_at: now.toISOString(),
+        })
+        .eq("id", escrowId)
+        .eq("status", "delivered")
+        .eq("dispute_status", "none")
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to release escrow: ${error.message}`);
+      }
+
+      console.log("🏁 Escrow RELEASED:", escrowId);
+
+      return data;
+    }
+
+    /* =====================================================
+       AUTO RELEASE
+       Cron-safe release.
+    ===================================================== */
+    case "AUTO_RELEASE": {
+      if (order.status === "released") {
+        return order;
+      }
+
+      if (order.status !== "delivered") {
+        return order;
+      }
+
+      if (order.dispute_status !== "none") {
+        console.log(
+          "🛑 Auto-release blocked by dispute:",
+          escrowId
+        );
+
+        return order;
+      }
+
+      if (!order.auto_release_at) {
+        return order;
+      }
+
+      if (new Date(order.auto_release_at) > now) {
+        return order;
+      }
+
+      const commission =
+        Number(order.amount) * PLATFORM_FEE_RATE;
+
+      const sellerAmount =
+        Number(order.amount) - commission;
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now.toISOString(),
+          commission,
+          seller_amount: sellerAmount,
+          is_auto_released: true,
+          is_locked: false,
+          updated_at: now.toISOString(),
+        })
+        .eq("id", escrowId)
+        .eq("status", "delivered")
+        .eq("dispute_status", "none")
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(
+          `Failed to auto-release escrow: ${error.message}`
+        );
+      }
+
+      console.log("⏱ AUTO RELEASED:", escrowId);
+
+      return data;
+    }
+
+    /* =====================================================
+       REFUND
+    ===================================================== */
+    case "REFUND": {
+      if (order.status === "refunded") {
+        return order;
+      }
+
+      if (order.status === "released") {
+        throw new Error("Cannot refund a released escrow");
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "refunded",
+          refunded_at: now.toISOString(),
+          is_locked: false,
+          updated_at: now.toISOString(),
+        })
+        .eq("id", escrowId)
+        .in("status", [
+          "pending",
+          "funded",
+          "delivered",
+          "disputed",
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to refund escrow: ${error.message}`);
+      }
+
+      console.log("↩️ Escrow REFUNDED:", escrowId);
+
+      return data;
+    }
+
+    /* =====================================================
+       DISPUTE
+    ===================================================== */
+    case "DISPUTE": {
+      if (order.status === "released") {
+        throw new Error("Cannot dispute a released escrow");
+      }
+
+      if (order.status === "refunded") {
+        throw new Error("Cannot dispute a refunded escrow");
+      }
+
+      if (order.status === "disputed") {
+        return order;
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "disputed",
+          dispute_status: "open",
+          disputed_at: now.toISOString(),
+          is_locked: true,
+          updated_at: now.toISOString(),
+        })
+        .eq("id", escrowId)
+        .not("status", "in", '("released","refunded")')
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to dispute escrow: ${error.message}`);
+      }
+
+      console.log("⚠️ Escrow DISPUTED:", escrowId);
+
+      return data;
+    }
+
+    default:
+      throw new Error(`Unknown escrow action: ${action}`);
+  }
+}

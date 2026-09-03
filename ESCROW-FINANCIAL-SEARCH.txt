@@ -1,0 +1,217 @@
+
+
+============================================================
+SEARCH: from("escrow_orders")
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:145: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:216: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:235: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:32: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:74: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:14: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\create\route.ts:10: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\create\route.ts:31: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:56: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:67: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:34: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:45: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:66: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:15: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:42: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\createEscrow.ts:19: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\disputeEngine.ts:30: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:22: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:51: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:78: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:118: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:174: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:206: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:231: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:30: .from("escrow_orders")
+
+
+============================================================
+SEARCH: from('escrow_orders')
+============================================================
+
+
+============================================================
+SEARCH: escrow_orders
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:145: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:216: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:235: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:32: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:74: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:14: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\create\route.ts:10: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\create\route.ts:31: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:56: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:67: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:34: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:45: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:66: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:15: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:42: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\createEscrow.ts:19: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\disputeEngine.ts:30: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:22: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:51: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:78: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:118: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:174: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:206: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:231: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:30: .from("escrow_orders")
+
+
+============================================================
+SEARCH: escrowEngine
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\action\route.ts:2: import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\action\route.ts:66: const result = await escrowEngine(action, escrowId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:3: import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:20: await escrowEngine("AUTO_RELEASE", e.id);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\escrow\auto-release\route.ts:2: import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\escrow\auto-release\route.ts:57: const result = await escrowEngine(
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\webhook\route.ts:4: import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\webhook\route.ts:104: await escrowEngine("FUND", escrowId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrow.service.ts:1: import { escrowEngine } from "./escrowEngine";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrow.service.ts:8: return escrowEngine("FUND", escrowId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrow.service.ts:12: return escrowEngine("HOLD", escrowId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrow.service.ts:17: return escrowEngine("RELEASE", escrowId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrow.service.ts:21: return escrowEngine("REFUND", escrowId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrow.service.ts:25: return escrowEngine("DISPUTE", escrowId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:13: export async function escrowEngine(
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\stripe\webhook\handler.ts:4: import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\stripe\webhook\handler.ts:45: await escrowEngine("FUND", escrowId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\intent\intentEngine.ts:1: import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\intent\intentEngine.ts:17: return escrowEngine(match[0], payload.bookingId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\stripe\webhook\handler.ts:7: import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\stripe\webhook\handler.ts:72: await escrowEngine("FUND", escrowId);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:3: import { escrowEngine } from "@/lib/domain/escrow/escrowEngine";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:46: await escrowEngine("AUTO_RELEASE", escrow.id);
+
+
+============================================================
+SEARCH: autoReleaseEngine
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:8: export async function autoReleaseEngine() {
+
+
+============================================================
+SEARCH: resolveDispute
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:198: const resolveDispute = useCallback(
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:472: resolveDispute(
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:494: resolveDispute(
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:516: resolveDispute(
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\resolve\route.ts:2: import { resolveDispute } from "@/lib/dispute/resolveDispute";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\resolve\route.ts:40: const result = await resolveDispute({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:5: export async function resolveDispute({
+
+
+============================================================
+SEARCH: stripe.transfers.create
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\release\route.ts:68: const transfer = await stripe.transfers.create({
+
+
+============================================================
+SEARCH: stripe.paymentIntents
+============================================================
+
+
+============================================================
+SEARCH: stripe.checkout
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\boost\route.ts:33: const session = await stripe.checkout.sessions.create({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\checkout\route.ts:106: await stripe.checkout.sessions.create({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\webhook\route.ts:89: const session = event.data.object as Stripe.Checkout.Session;
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\stripe\webhook\handler.ts:36: const session = event.data.object as Stripe.Checkout.Session;
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\stripe\checkout.ts:5: params: Stripe.Checkout.SessionCreateParams
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\stripe\checkout.ts:7: return stripe.checkout.sessions.create(params);
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\payment.service.ts:26: const session = await stripe.checkout.sessions.create({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\payment.service.ts:33: const session = await stripe.checkout.sessions.create({
+
+
+============================================================
+SEARCH: payment_events
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\webhookGuard.ts:10: .from("payment_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\webhookGuard.ts:29: await supabase.from("payment_events").insert({
+
+
+============================================================
+SEARCH: escrow_events
+============================================================
+
+
+============================================================
+SEARCH: escrow_audit_logs
+============================================================
+
+
+============================================================
+SEARCH: audit_logs
+============================================================
+
+
+============================================================
+SEARCH: transactions
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\about\page.tsx:267: text:"Verified participants, transparent transactions, and systems designed for confidence."
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:114: Manage all escrow transactions
+
+
+============================================================
+SEARCH: ledger
+============================================================
+
+
+============================================================
+SEARCH: seller_amount
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:123: seller_amount: sellerAmount,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:179: seller_amount: sellerAmount,
+
+
+============================================================
+SEARCH: commission
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:11: const COMMISSION_RATE = 0.1;
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:114: const commission = Number(escrow.amount) * COMMISSION_RATE;
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:115: const sellerAmount = Number(escrow.amount) - commission;
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:122: commission,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:170: const commission = Number(escrow.amount) * COMMISSION_RATE;
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:171: const sellerAmount = Number(escrow.amount) - commission;
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:178: commission,
+
+
+============================================================
+SEARCH: transfer_id
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\release\route.ts:81: stripe_transfer_id: transfer.id,
+
+
+============================================================
+SEARCH: stripe_transfer_id
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\release\route.ts:81: stripe_transfer_id: transfer.id,
+
+
+============================================================
+SEARCH: payout
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\release\route.ts:72: description: `Payout for conversation ${conversationId}`,
+
+
+============================================================
+SEARCH: agreement_id
+============================================================
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:58: .eq("agreement_id", agreementId)
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:69: agreement_id: agreementId,

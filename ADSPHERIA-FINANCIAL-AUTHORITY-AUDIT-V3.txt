@@ -1,0 +1,204 @@
+ADSPHERIA FINANCIAL AUTHORITY AUDIT V3
+Generated: 2026-08-31 23:43:44
+Project: C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend
+
+======================================================================
+1. FINANCIAL TABLE REFERENCES
+======================================================================
+
+---------------- SEARCH ALL: escrow_orders ----------------
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:145: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:216: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\disputes\page.tsx:235: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:32: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:74: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:14: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\create\route.ts:10: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\dispute\create\route.ts:31: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\admin\disputes\page.tsx:68: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\admin\disputes\page.tsx:92: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\admin\disputes\page.tsx:102: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\admin\escrow\page.tsx:39: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\admin\escrow\page.tsx:58: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\cron\auto-release\route.ts:14: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\dispute\create\route.ts:10: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\dispute\create\route.ts:31: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:56: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\agreements\agreementEngine.ts:67: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:34: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:45: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\dispute\resolveDispute.ts:66: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:15: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:42: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\createEscrow.ts:19: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\disputeEngine.ts:30: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:22: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:51: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:78: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:118: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:174: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:206: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\escrowEngine.ts:231: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:30: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\agreements\agreementEngine.ts:56: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\agreements\agreementEngine.ts:67: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\dispute\resolveDispute.ts:34: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\dispute\resolveDispute.ts:45: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\dispute\resolveDispute.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\dispute\resolveDispute.ts:66: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoRelease.ts:15: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoRelease.ts:42: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoReleaseEngine.ts:15: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoReleaseEngine.ts:42: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoReleaseEngine.ts:55: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\createEscrow.ts:19: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\disputeEngine.ts:30: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\services\escrowService.ts:14: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\services\escrowService.ts:35: .from("escrow_orders")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\services\escrowService.ts:49: .from("escrow_orders")
+
+---------------- SEARCH ALL: escrows ----------------
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:13: const { data: escrows } = await supabase
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:19: for (const e of escrows || []) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\auto-release\route.ts:24: processed: escrows?.length || 0,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\cron\route.ts:22: const escrow = await cronService.autoReleaseEscrows();
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\cron\auto-release\route.ts:13: const { data: escrows } = await supabase
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\cron\auto-release\route.ts:19: for (const e of escrows || []) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\cron\auto-release\route.ts:24: processed: escrows?.length || 0,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:13: // 1. Get ONLY eligible escrows
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:14: const { data: escrows, error } = await supabase
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:25: if (!escrows || escrows.length === 0) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:35: for (const escrow of escrows) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\domain\escrow\autoReleaseEngine.ts:77: processed: escrows.length,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:25: async autoReleaseEscrows() {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:29: const { data: escrows, error } = await supabase
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:44: for (const escrow of escrows ?? []) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\cron.service.ts:60: processed: escrows?.length ?? 0,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoRelease.ts:13: // 1. Get all eligible escrows
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoRelease.ts:14: const { data: escrows, error } = await supabase
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoRelease.ts:25: if (!escrows || escrows.length === 0) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoRelease.ts:32: for (const escrow of escrows) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoRelease.ts:66: processed: escrows.length,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoReleaseEngine.ts:13: // 1. Get ONLY eligible escrows
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoReleaseEngine.ts:14: const { data: escrows, error } = await supabase
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoReleaseEngine.ts:25: if (!escrows || escrows.length === 0) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoReleaseEngine.ts:35: for (const escrow of escrows) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\autoReleaseEngine.ts:77: processed: escrows.length,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\escrowEngine.ts:26: .from("escrows")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\escrowEngine.ts:50: .from("escrows")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\escrowEngine.ts:71: .from("escrows")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\escrowEngine.ts:101: .from("escrows")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\escrowEngine.ts:127: .from("escrows")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\escrowEngine.ts:150: .from("escrows")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\domain\escrow\escrowEngine.ts:170: .from("escrows")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\services\escrowService.ts:3: export const escrowService = {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\services\index.ts:4: import { escrowService } from "./escrowService"
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\services\index.ts:10: escrow: escrowService,
+
+---------------- SEARCH ALL: payments ----------------
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\chapa\initialize\route.ts:273: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\chapa\initialize\route.ts:281: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\components\layout\Footer.tsx:51: Payments
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\ai\types.ts:16: payments: any[];
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\payment.service.ts:13: export const paymentService = {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\payment.service.ts:22: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\payment.service.ts:44: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\payment.service.ts:65: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\application\payments\requestPayment.ts:31: const response = await fetch("/api/payments/request", {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\events\eventTypes.ts:30: ESCROW / PAYMENTS
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\events\eventTypes.ts:65: /* PAYMENTS */
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\stripe\webhook\handler.ts:6: } from "@/lib/payments/webhookGuard";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\stripe\webhook\handler.ts:38: 3. ONLY HANDLE SUCCESS PAYMENTS
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\payment.service.ts:22: export const paymentService = {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\state\store.ts:8: * - boost system state (future payments)
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\ai\types.ts:16: payments: any[];
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\application\payments\payment.service.ts:13: export const paymentService = {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\application\payments\payment.service.ts:22: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\application\payments\payment.service.ts:44: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\application\payments\payment.service.ts:65: .from("payments")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\application\payments\requestPayment.ts:31: const response = await fetch("/api/payments/request", {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\events\eventTypes.ts:30: ESCROW / PAYMENTS
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\events\eventTypes.ts:65: /* PAYMENTS */
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\payments\stripe\webhook\handler.ts:6: } from "@/lib/payments/webhookGuard";
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\payments\stripe\webhook\handler.ts:38: 3. ONLY HANDLE SUCCESS PAYMENTS
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\services\payment.service.ts:22: export const paymentService = {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\state\store.ts:8: * - boost system state (future payments)
+
+---------------- SEARCH ALL: payment_events ----------------
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\webhookGuard.ts:10: .from("payment_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\payments\webhookGuard.ts:29: await supabase.from("payment_events").insert({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\payments\webhookGuard.ts:10: .from("payment_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\payments\webhookGuard.ts:29: await supabase.from("payment_events").insert({
+
+---------------- SEARCH ALL: stripe_events ----------------
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\webhook\route.ts:70: .from("stripe_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\stripe\webhook\route.ts:79: await supabaseAdmin.from("stripe_events").insert({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\stripe\webhook\route.ts:72: .from("stripe_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\stripe\webhook\route.ts:82: await supabaseAdmin.from("stripe_events").insert({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\stripe\webhook\handler.ts:13: .from("stripe_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\stripe\webhook\handler.ts:24: await supabaseAdmin.from("stripe_events").insert({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\infrastructure\stripe\webhook\handler.ts:13: .from("stripe_events")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\infrastructure\stripe\webhook\handler.ts:24: await supabaseAdmin.from("stripe_events").insert({
+
+---------------- SEARCH ALL: transactions ----------------
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\about\page.tsx:267: text:"Verified participants, transparent transactions, and systems designed for confidence."
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:114: Manage all escrow transactions
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\admin\escrow\page.tsx:86: Manage all escrow transactions
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:19: .from("escrow_transactions")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:40: .from("escrow_transactions")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:54: .from("escrow_transactions")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:72: .from("escrow_transactions")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:85: LIST USER TRANSACTIONS
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:87: async getUserTransactions(userId: string) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:89: .from("escrow_transactions")
+
+---------------- SEARCH ALL: transaction ----------------
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\about\page.tsx:267: text:"Verified participants, transparent transactions, and systems designed for confidence."
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\admin\escrow\page.tsx:114: Manage all escrow transactions
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\chapa\initialize\route.ts:286: legacy_transaction_ref:
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\chapa\initialize\route.ts:328: "https://api.chapa.co/v1/transaction/initialize",
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\chapa\verify\route.ts:26: message: "Missing transaction reference",
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app\api\chapa\verify\route.ts:33: `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\admin\escrow\page.tsx:86: Manage all escrow transactions
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\chapa\initialize\route.ts:294: legacy_transaction_ref:
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\chapa\initialize\route.ts:337: "https://api.chapa.co/v1/transaction/initialize",
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\chapa\verify\route.ts:26: message: "Missing transaction reference",
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\app_BACKUP\api\chapa\verify\route.ts:33: `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\chapa\checkout.ts:20: `${chapaConfig.baseUrl}/transaction/initialize`,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\chapa\verify.ts:3: export async function verifyChapaTransaction(tx_ref: string) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\infrastructure\chapa\verify.ts:10: `${chapaConfig.baseUrl}/transaction/verify/${tx_ref}`,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib\services\payment.service.ts:73: `https://api.chapa.co/v1/transaction/verify/${input.tx_ref}`,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:5: CREATE ESCROW TRANSACTION
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:7: async createTransaction({
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:19: .from("escrow_transactions")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:36: GET TRANSACTION
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:38: async getTransaction(id: string) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:40: .from("escrow_transactions")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:52: async releaseFunds(transactionId: string) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:54: .from("escrow_transactions")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:59: .eq("id", transactionId)
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:68: CANCEL TRANSACTION
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:70: async cancelTransaction(transactionId: string) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:72: .from("escrow_transactions")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:76: .eq("id", transactionId)
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:85: LIST USER TRANSACTIONS
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:87: async getUserTransactions(userId: string) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\core\escrow.ts:89: .from("escrow_transactions")
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\infrastructure\chapa\checkout.ts:20: `${chapaConfig.baseUrl}/transaction/initialize`,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\infrastructure\chapa\verify.ts:3: export async function verifyChapaTransaction(tx_ref: string) {
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\infrastructure\chapa\verify.ts:10: `${chapaConfig.baseUrl}/transaction/verify/${tx_ref}`,
+C:\Users\shems computer\Desktop\AdSphare\frontend\adsphere-frontend\lib_BACKUP\services\payment.service.ts:73: `https://api.chapa.co/v1/transaction/verify/${input.tx_ref}`,
+
+---------------- SEARCH ALL: ledger ----------------
+
+---------------- SEARCH ALL: ledger_entries ----------------
+
+---------------- SEARCH ALL: payouts ----------------
+
+---------------- SEARCH ALL: escrow_events ----------------
+
+---------------- SEARCH ALL: escrow_audit_logs ----------------
+
+---------------- SEARCH ALL: audit_logs ----------------

@@ -8,9 +8,8 @@ export type EscrowAction =
   | "DISPUTE"
   | "AUTO_RELEASE";
 
-/* =========================
-   ESCROW ENGINE (STATE MACHINE)
-========================= */
+const COMMISSION_RATE = 0.1;
+
 export async function escrowEngine(
   action: EscrowAction,
   escrowId: string
@@ -19,11 +18,8 @@ export async function escrowEngine(
     throw new Error("Missing escrowId");
   }
 
-  /* =========================
-     FETCH ESCROW
-  ========================= */
   const { data: escrow, error: fetchError } = await supabaseAdmin
-    .from("escrows")
+    .from("escrow_orders")
     .select("*")
     .eq("id", escrowId)
     .single();
@@ -32,159 +28,227 @@ export async function escrowEngine(
     throw new Error("Escrow not found");
   }
 
-  /* =========================
-     STATE MACHINE
-  ========================= */
+  const now = new Date().toISOString();
+
   switch (action) {
-
-    /* =========================
-       FUND
-    ========================= */
     case "FUND": {
-      if (escrow.status === "FUNDED") return;
-
-      const autoReleaseAt = new Date();
-      autoReleaseAt.setDate(autoReleaseAt.getDate() + 7);
-
-      const { error: updateError } = await supabaseAdmin
-        .from("escrows")
-        .update({
-          status: "FUNDED",
-          funded_at: new Date().toISOString(),
-          auto_release_at: autoReleaseAt.toISOString(),
-          dispute_deadline: autoReleaseAt.toISOString(),
-          is_auto_released: false,
-        })
-        .eq("id", escrowId);
-
-      if (updateError) throw updateError;
-
-      console.log("💰 Escrow FUNDED:", escrowId);
-      break;
-    }
-
-    /* =========================
-       HOLD
-    ========================= */
-    case "HOLD": {
-      const { error: updateError } = await supabaseAdmin
-        .from("escrows")
-        .update({
-          status: "HELD",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", escrowId);
-
-      if (updateError) throw updateError;
-
-      console.log("⏸ Escrow HELD:", escrowId);
-      break;
-    }
-
-    /* =========================
-       RELEASE
-    ========================= */
-    case "RELEASE": {
-      if (
-        escrow.status !== "FUNDED" &&
-        escrow.status !== "HELD"
-      ) {
-        throw new Error("Escrow not ready for release");
+      if (escrow.status === "funded") {
+        return escrow;
       }
 
-      if (escrow.status === "RELEASED") return;
+      if (escrow.status !== "pending") {
+        throw new Error(
+          `Cannot fund escrow from status: ${escrow.status}`
+        );
+      }
 
-      const commission = escrow.amount * 0.1;
-      const sellerAmount = escrow.amount - commission;
+      const autoRelease = new Date();
+      autoRelease.setDate(autoRelease.getDate() + 7);
 
-      const { error: updateError } = await supabaseAdmin
-        .from("escrows")
+      const autoReleaseAt = autoRelease.toISOString();
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
         .update({
-          status: "RELEASED",
-          released_at: new Date().toISOString(),
-          commission,
-          seller_amount: sellerAmount,
+          status: "funded",
+          funded_at: now,
+          auto_release_at: autoReleaseAt,
+          buyer_confirmation_deadline: autoReleaseAt,
+          is_locked: true,
+          updated_at: now,
         })
-        .eq("id", escrowId);
+        .eq("id", escrowId)
+        .eq("status", "pending")
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
-      console.log("🏁 Escrow RELEASED:", escrowId);
-      break;
+      console.log("💰 Escrow FUNDED:", escrowId);
+
+      return data;
     }
 
-    /* =========================
-       AUTO RELEASE
-    ========================= */
-    case "AUTO_RELEASE": {
-      if (escrow.status !== "FUNDED") return;
-      if (escrow.status === "RELEASED") return;
+    case "HOLD": {
+      if (escrow.status === "released") {
+        throw new Error("Cannot hold a released escrow");
+      }
 
-      const commission = escrow.amount * 0.1;
-      const sellerAmount = escrow.amount - commission;
-
-      const { error: updateError } = await supabaseAdmin
-        .from("escrows")
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
         .update({
-          status: "RELEASED",
-          released_at: new Date().toISOString(),
+          is_locked: true,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("⏸ Escrow HELD:", escrowId);
+
+      return data;
+    }
+
+    case "RELEASE": {
+      if (escrow.status === "released") {
+        return escrow;
+      }
+
+      if (
+        escrow.status !== "funded" &&
+        escrow.status !== "delivered" &&
+        escrow.status !== "disputed"
+      ) {
+        throw new Error(
+          `Escrow not ready for release from status: ${escrow.status}`
+        );
+      }
+
+      if (escrow.dispute_status === "open" ||
+          escrow.dispute_status === "under_review") {
+        throw new Error("Cannot release escrow while dispute is active");
+      }
+
+      const commission = Number(escrow.amount) * COMMISSION_RATE;
+      const sellerAmount = Number(escrow.amount) - commission;
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now,
+          commission,
+          seller_amount: sellerAmount,
+          is_locked: false,
+          updated_at: now,
+        })
+        .eq("id", escrowId)
+        .in("status", ["funded", "delivered"])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("🏁 Escrow RELEASED:", escrowId);
+
+      return data;
+    }
+
+    case "AUTO_RELEASE": {
+      if (escrow.status === "released") {
+        return escrow;
+      }
+
+      if (
+        escrow.status !== "funded" &&
+        escrow.status !== "delivered"
+      ) {
+        return escrow;
+      }
+
+      if (
+        escrow.dispute_status === "open" ||
+        escrow.dispute_status === "under_review"
+      ) {
+        console.log(
+          "🛑 AUTO RELEASE BLOCKED — active dispute:",
+          escrowId
+        );
+
+        return escrow;
+      }
+
+      if (
+        escrow.auto_release_at &&
+        new Date(escrow.auto_release_at) > new Date()
+      ) {
+        return escrow;
+      }
+
+      const commission = Number(escrow.amount) * COMMISSION_RATE;
+      const sellerAmount = Number(escrow.amount) - commission;
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
+        .update({
+          status: "released",
+          released_at: now,
           commission,
           seller_amount: sellerAmount,
           is_auto_released: true,
+          is_locked: false,
+          updated_at: now,
         })
-        .eq("id", escrowId);
+        .eq("id", escrowId)
+        .in("status", ["funded", "delivered"])
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
       console.log("⏱ AUTO RELEASED:", escrowId);
-      break;
+
+      return data;
     }
 
-    /* =========================
-       REFUND
-    ========================= */
     case "REFUND": {
-      if (escrow.status === "REFUNDED") return;
+      if (escrow.status === "refunded") {
+        return escrow;
+      }
 
-      const { error: updateError } = await supabaseAdmin
-        .from("escrows")
+      if (escrow.status === "released") {
+        throw new Error("Cannot refund a released escrow");
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
         .update({
-          status: "REFUNDED",
-          refunded_at: new Date().toISOString(),
+          status: "refunded",
+          refunded_at: now,
+          is_locked: false,
+          updated_at: now,
         })
-        .eq("id", escrowId);
+        .eq("id", escrowId)
+        .not("status", "eq", "released")
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
       console.log("↩️ Escrow REFUNDED:", escrowId);
-      break;
+
+      return data;
     }
 
-    /* =========================
-       DISPUTE
-    ========================= */
     case "DISPUTE": {
-      if (escrow.status === "DISPUTED") return;
+      if (escrow.status === "released") {
+        throw new Error("Cannot dispute a released escrow");
+      }
 
-      const { error: updateError } = await supabaseAdmin
-        .from("escrows")
+      const { data, error } = await supabaseAdmin
+        .from("escrow_orders")
         .update({
-          status: "DISPUTED",
-          disputed_at: new Date().toISOString(),
+          status: "disputed",
+          dispute_status: "open",
+          disputed_at: now,
+          is_locked: true,
+          updated_at: now,
         })
-        .eq("id", escrowId);
+        .eq("id", escrowId)
+        .not("status", "eq", "released")
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
       console.log("⚠️ Escrow DISPUTED:", escrowId);
-      break;
+
+      return data;
     }
 
-    /* =========================
-       DEFAULT
-    ========================= */
     default:
       throw new Error(`Unknown escrow action: ${action}`);
   }
 }
-
