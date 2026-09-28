@@ -1,4 +1,4 @@
-import { createBrowserSupabase } from "@/lib/supabase/browser";
+﻿import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 const supabase = createBrowserSupabase();
 
@@ -38,4 +38,5 @@ export const messageStatusService = {
     return { success: true };
   },
 };
+
 

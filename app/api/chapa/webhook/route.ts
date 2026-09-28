@@ -1,22 +1,14 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
+export const runtime = "nodejs";
 
-    console.log("Webhook received:", body);
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 }
-    );
-  }
+export async function POST() {
+  return NextResponse.json(
+    {
+      success: false,
+      code: "CHAPA_WEBHOOK_DISABLED",
+      message: "Chapa webhook processing is disabled. Use the authenticated verification flow.",
+    },
+    { status: 410 },
+  );
 }
-
-
-
-
-
-

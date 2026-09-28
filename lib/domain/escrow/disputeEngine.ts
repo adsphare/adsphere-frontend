@@ -1,44 +1,14 @@
-import { createServerSupabase } from "@/lib/supabase/server";
+export type DisputeAction = "OPEN";
 
-export async function disputeEngine({
-  escrowId,
-  userId,
-  reason,
-}: {
-  escrowId: string;
-  userId: string;
-  reason?: string;
-}) {
-  const supabase = await createServerSupabase();
-
-  // 1. Create dispute
-  const { data: dispute, error } = await supabase
-    .from("disputes")
-    .insert({
-      escrow_id: escrowId,
-      opened_by: userId,
-      reason: reason || "No reason provided",
-      status: "open",
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  // 2. Lock escrow
-  await supabase
-    .from("escrow_orders")
-    .update({
-      status: "disputed",
-      is_locked: true,
-      disputed_at: new Date().toISOString(),
-    })
-    .eq("id", escrowId);
-
-  return dispute;
+/**
+ * Legacy dispute engine intentionally disabled.
+ *
+ * Dispute creation must use the canonical `open_dispute` RPC,
+ * which derives buyer/seller identity from escrow_orders and
+ * atomically creates the dispute + locks the escrow.
+ */
+export function disputeEngine(): never {
+  throw new Error(
+    "LEGACY_DISPUTE_ENGINE_DISABLED: use the canonical open_dispute RPC",
+  );
 }
-
-
-
-
-

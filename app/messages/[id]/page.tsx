@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
@@ -139,7 +139,6 @@ export default function ChatPage() {
 
     await chat.sendMessage({
       conversationId,
-      senderId: userId,
       content: text,
     });
   }
@@ -200,3 +199,6 @@ export default function ChatPage() {
     </div>
   );
 }
+
+
+

@@ -1,45 +1,28 @@
-import { createBrowserSupabase } from "@/lib/supabase/browser";
-
 export async function getOrCreateConversation({
   listingId,
-  buyerId,
-  sellerId,
 }: {
   listingId: string;
-  buyerId: string;
-  sellerId: string;
 }) {
-  const supabase = createBrowserSupabase();
+  const response = await fetch("/api/conversations/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      listingId,
+    }),
+  });
 
-  // 1. check existing conversation
-  const { data: existing, error: findError } = await supabase
-    .from("conversations")
-    .select("*")
-    .eq("listing_id", listingId)
-    .eq("buyer_id", buyerId)
-    .eq("seller_id", sellerId)
-    .maybeSingle();
+  const payload = await response.json().catch(() => null);
 
-  if (findError) {
-    console.error("Conversation fetch error:", findError.message);
+  if (!response.ok) {
+    throw new Error(
+      typeof payload?.error === "string"
+        ? payload.error
+        : "Failed to create conversation"
+    );
   }
 
-  if (existing) return existing;
-
-  // 2. create new conversation
-  const { data, error } = await supabase
-    .from("conversations")
-    .insert({
-      listing_id: listingId,
-      buyer_id: buyerId,
-      seller_id: sellerId,
-      created_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  return data;
+  return payload;
 }
-

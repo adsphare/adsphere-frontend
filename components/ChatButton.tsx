@@ -6,8 +6,6 @@ import { getOrCreateConversation } from "@/lib/messaging/getOrCreateConversation
 
 export default function ChatButton({ listing }: { listing: any }) {
   const router = useRouter();
-
-  // ✅ REQUIRED
   const supabase = createBrowserSupabase();
 
   async function startChat() {
@@ -20,18 +18,20 @@ export default function ChatButton({ listing }: { listing: any }) {
       return;
     }
 
-    if (!listing?.id || !listing?.user_id) {
+    if (!listing?.id) {
       console.error("Invalid listing data");
       return;
     }
 
-    const conversation = await getOrCreateConversation({
-      listingId: listing.id,
-      buyerId: user.id,
-      sellerId: listing.user_id,
-    });
+    try {
+      const conversation = await getOrCreateConversation({
+        listingId: listing.id,
+      });
 
-    router.push(`/messages/${conversation.id}`);
+      router.push(`/messages/${conversation.id}`);
+    } catch (error) {
+      console.error("Failed to start chat:", error);
+    }
   }
 
   return (
@@ -39,8 +39,7 @@ export default function ChatButton({ listing }: { listing: any }) {
       onClick={startChat}
       className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold"
     >
-      💬 Message Owner
+      ?? Message Owner
     </button>
   );
 }
-

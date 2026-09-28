@@ -1,14 +1,13 @@
 import { MessageContext, EnforcementResult } from "@/lib/core/enforcement/types";
 import { contactRule } from "@/lib/core/enforcement/rules/contactRule";
-import { getTrust } from "@/lib/core/trust/store";
 
-/**
- * MAIN POLICY ENGINE
- * Decides if a message is allowed inside Deal Room
- */
-export async function evaluateMessage(
-  ctx: MessageContext
-): Promise<EnforcementResult> {
+export type MessagePolicyContext = MessageContext & {
+  trustScore: number;
+};
+
+export function evaluateMessage(
+  ctx: MessagePolicyContext
+): EnforcementResult {
 
   // -------------------------
   // 1. CONTACT SHARING RULE
@@ -18,18 +17,9 @@ export async function evaluateMessage(
   }
 
   // -------------------------
-  // 2. ORDER VALIDATION RULE
+  // 2. TRUST SYSTEM RULE
   // -------------------------
-  if (!ctx.orderId) {
-    return "BLOCK";
-  }
-
-  // -------------------------
-  // 3. TRUST SYSTEM RULE
-  // -------------------------
-  const trust = await getTrust(ctx.userId);
-
-  const score = trust?.score ?? 0;
+  const score = Math.max(0, Math.min(100, ctx.trustScore));
 
   // SECURITY FLOOR
   if (score <= 0) {
@@ -49,4 +39,3 @@ export async function evaluateMessage(
   // HIGH TRUST
   return "ALLOW";
 }
-

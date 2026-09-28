@@ -1,50 +1,15 @@
-
-import { createServerSupabase } from "@/lib/supabase/server";;
+/**
+ * Legacy Boost service.
+ *
+ * Financial Boost activation is intentionally disabled.
+ * Boosts may only become active through the canonical
+ * payment-authority settlement flow.
+ */
 
 export const boostService = {
-  async activate(listingId: string, plan: "basic" | "pro" | "premium") {
-   const supabase = await createServerSupabase();
-
-    const config = {
-      basic: { score: 100, multiplier: 1.2, days: 5 },
-      pro: { score: 250, multiplier: 1.8, days: 10 },
-      premium: { score: 600, multiplier: 2.5, days: 20 },
-    }[plan];
-
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + config.days);
-
-    const { data, error } = await supabase
-      .from("boosts")
-      .insert({
-        listing_id: listingId,
-        plan,
-        score: config.score,
-        multiplier: config.multiplier,
-        status: "active",
-        starts_at: new Date().toISOString(),
-        expires_at: expiresAt.toISOString(),
-      })
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
-
-    await supabase
-      .from("listings")
-      .update({
-        is_boosted: true,
-        boost_level: config.score,
-        boost_expires_at: expiresAt.toISOString(),
-      })
-      .eq("id", listingId);
-
-    return data;
+  async activate(): Promise<never> {
+    throw new Error(
+      "Legacy Boost activation is disabled. Use the canonical payment settlement flow.",
+    );
   },
 };
-
-
-
-
-
-

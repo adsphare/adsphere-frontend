@@ -1,6 +1,15 @@
-import { createServerSupabase } from "@/lib/supabase/server";
+﻿import { createServerSupabase } from "@/lib/supabase/server";
 
 type Action = "refund" | "release";
+type ResolveDisputeResult = {
+  success: boolean;
+  dispute_id?: string;
+  escrow_id?: string;
+  action?: Action;
+  settlement_required?: boolean;
+  financial_state?: string;
+  error?: string;
+};
 
 export async function resolveDispute({
   disputeId,
@@ -11,86 +20,116 @@ export async function resolveDispute({
   action: Action;
   adminId: string;
 }) {
+  if (!disputeId) {
+    throw new Error("Missing dispute ID");
+  }
+
+  if (action !== "refund" && action !== "release") {
+    throw new Error("Invalid dispute action");
+  }
+
+  if (!adminId) {
+    throw new Error("Missing administrator identity");
+  }
+
   const supabase = await createServerSupabase();
 
-  // 1. Get dispute
-  const { data: dispute, error } = await supabase
-    .from("disputes")
-    .select("*")
-    .eq("id", disputeId)
-    .single();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
-  if (error || !dispute) {
-    throw new Error("Dispute not found");
+  if (authError || !user || user.id !== adminId) {
+    throw new Error("Unauthorized");
   }
 
-  // 2. Safety check (must still be open)
-  if (dispute.status !== "open") {
-    throw new Error("Dispute already resolved");
-  }
-
-  // 3. Get escrow
-  const { data: escrow } = await supabase
-    .from("escrow_orders")
-    .select("*")
-    .eq("id", dispute.escrow_id)
-    .single();
-
-  if (!escrow) {
-    throw new Error("Escrow not found");
-  }
-
-  // 4. Lock escrow during resolution
-  await supabase
-    .from("escrow_orders")
-    .update({
-      is_locked: true,
-      status: "disputed",
-    })
-    .eq("id", escrow.id);
-
-  // 5. Apply decision
-  if (action === "release") {
+  const { data: profile, error: profileError } =
     await supabase
-      .from("escrow_orders")
-      .update({
-        status: "released",
-        is_locked: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", escrow.id);
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+  if (
+    profileError ||
+    !profile ||
+    profile.role !== "admin"
+  ) {
+    throw new Error("Forbidden");
   }
 
-  if (action === "refund") {
-    await supabase
-      .from("escrow_orders")
-      .update({
-        status: "refunded",
-        is_locked: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", escrow.id);
+  const { data, error } = await supabase.rpc(
+    "resolve_dispute_decision",
+    {
+      p_dispute_id: disputeId,
+      p_admin_id: user.id,
+      p_action: action,
+    }
+  );
+
+  if (error) {
+    console.error(
+      "Resolve dispute RPC failed:",
+      error
+    );
+
+    throw new Error("Failed to resolve dispute");
   }
 
-  // 6. Close dispute
-  await supabase
-    .from("disputes")
-    .update({
-      status: "resolved",
-      resolution: action,
-      resolved_by: adminId,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", disputeId);
+  const result =
+    data as ResolveDisputeResult | null;
+
+  if (!result?.success) {
+    switch (result?.error) {
+      case "FORBIDDEN":
+        throw new Error("Forbidden");
+
+      case "DISPUTE_NOT_FOUND":
+        throw new Error("Dispute not found");
+
+      case "ESCROW_NOT_FOUND":
+        throw new Error("Escrow not found");
+
+      case "DISPUTE_ALREADY_RESOLVED":
+        throw new Error("Dispute already resolved");
+
+      case "INVALID_ACTION":
+        throw new Error("Invalid dispute action");
+
+      case "DISPUTE_PARTICIPANT_MISMATCH":
+        throw new Error(
+          "Dispute participant integrity violation"
+        );
+
+      case "ESCROW_NOT_DISPUTED":
+        throw new Error(
+          "Escrow is not in the required disputed state"
+        );
+
+      case "ESCROW_NOT_LOCKED":
+        throw new Error(
+          "Escrow must remain locked during resolution"
+        );
+
+      default:
+        throw new Error(
+          "Unable to resolve dispute"
+        );
+    }
+  }
 
   return {
     success: true,
     action,
-    escrowId: escrow.id,
+    disputeId: result.dispute_id,
+    escrowId: result.escrow_id,
+    settlementRequired:
+      result.settlement_required === true,
+    financialState:
+      result.financial_state ??
+      "DISPUTED_LOCKED",
   };
 }
-
-
 
 
 

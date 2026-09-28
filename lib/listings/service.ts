@@ -1,3 +1,4 @@
+
 import type { Listing } from "./types";
 
 import {
@@ -13,7 +14,6 @@ import {
   type CreateListingInput,
 } from "./validation";
 
-
 /* =========================================
    GET ALL LISTINGS
 ========================================= */
@@ -21,7 +21,6 @@ import {
 export async function fetchListings(): Promise<Listing[]> {
   return await getListings();
 }
-
 
 /* =========================================
    GET SINGLE LISTING
@@ -33,7 +32,6 @@ export async function fetchListing(
   return await getListingById(id);
 }
 
-
 /* =========================================
    CREATE LISTING
 ========================================= */
@@ -44,21 +42,14 @@ export async function createNewListing(
     currency?: string;
   }
 ): Promise<Listing> {
-
-
   console.log(
     "CREATE LISTING INPUT:",
     JSON.stringify(input, null, 2)
   );
 
-
-  const errors =
-    validateListing(input);
-
-
+  const errors = validateListing(input);
 
   if (errors.length > 0) {
-
     console.log(
       "LISTING VALIDATION ERRORS:",
       errors
@@ -67,82 +58,107 @@ export async function createNewListing(
     throw new Error(
       errors.join("\n")
     );
-
   }
 
+  const listing = await createListing({
+    user_id: input.user_id,
 
+    title: input.title,
 
-  const listing =
-    await createListing({
+    description:
+      input.description ?? "",
 
-      user_id: input.user_id,
+    location:
+      input.location,
 
-      title: input.title,
+    type:
+      input.type,
 
-      description:
-        input.description ?? "",
+    price:
+      input.price,
 
-      location:
-        input.location,
+    currency:
+      input.currency ?? "ETB",
 
-      type:
-        input.type,
+    status:
+      "active",
 
-      price:
-        input.price,
+    /*
+     * Boost fields are initialized only when
+     * the listing is created.
+     *
+     * They are not editable through editListing().
+     */
+    boost_score:
+      0,
 
-      currency:
-        input.currency ?? "ETB",
+    boost_views:
+      0,
 
-      status:
-        "active",
+    boost_clicks:
+      0,
 
-      boost_score:
-        0,
+    boosted:
+      false,
 
-      boost_views:
-        0,
-
-      boost_clicks:
-        0,
-
-      boosted:
-        false,
-
-      created_at:
-        new Date().toISOString(),
-
-    });
-
-
+    created_at:
+      new Date().toISOString(),
+  });
 
   console.log(
     "CREATED LISTING:",
     listing
   );
 
-
   return listing;
-
 }
-
 
 /* =========================================
    UPDATE LISTING
 ========================================= */
 
+/*
+ * Only ordinary listing content is editable.
+ *
+ * Explicitly excluded from this service:
+ *
+ * - boost_score
+ * - boosted
+ * - boost_expires_at
+ * - boost_plan
+ * - boost_provider
+ *
+ * Promotion state must come from the canonical
+ * payment / boost settlement flow.
+ */
+
+export type EditableListingUpdates = {
+  title?: Listing["title"];
+  description?: Listing["description"];
+  location?: Listing["location"];
+  type?: Listing["type"];
+  price?: Listing["price"];
+  currency?: Listing["currency"];
+};
+
 export async function editListing(
   id: string,
-  updates: Partial<Listing>
+  updates: EditableListingUpdates
 ): Promise<Listing> {
+  const safeUpdates: EditableListingUpdates = {
+    title: updates.title,
+    description: updates.description,
+    location: updates.location,
+    type: updates.type,
+    price: updates.price,
+    currency: updates.currency,
+  };
 
   return await updateListing(
     id,
-    updates
+    safeUpdates
   );
-
 }
-
 
 /* =========================================
    DELETE LISTING
@@ -151,7 +167,6 @@ export async function editListing(
 export async function removeListing(
   id: string
 ): Promise<void> {
-
   await deleteListing(id);
-
 }
+

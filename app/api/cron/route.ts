@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { cronService } from "@/lib/services/cron.service";
 
 export const runtime = "nodejs";
@@ -19,12 +19,10 @@ export async function GET(req: Request) {
 
   try {
     const boosts = await cronService.expireBoosts();
-    const escrow = await cronService.autoReleaseEscrows();
 
     return NextResponse.json({
       success: true,
       boosts,
-      escrow,
     });
   } catch (error) {
     console.error("Cron process failed:", error);
@@ -32,12 +30,10 @@ export async function GET(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Cron processing failed",
+        error: "Cron processing failed",
       },
       { status: 500 }
     );
   }
 }
+

@@ -72,15 +72,15 @@ export async function POST(req: Request) {
     }
 
     const isParticipant =
-      dispute.buyer_id === user.id ||
-      dispute.seller_id === user.id;
+  dispute.buyer_id === user.id ||
+  dispute.seller_id === user.id;
 
-    if (!isParticipant) {
-      return NextResponse.json(
-        { error: "You are not a participant in this dispute" },
-        { status: 403 }
-      );
-    }
+if (!isParticipant) {
+  return NextResponse.json(
+    { error: "You are not a participant in this dispute" },
+    { status: 403 }
+  );
+}
 
     const result = await uploadEvidence(
       file,

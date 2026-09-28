@@ -125,8 +125,6 @@ export default function DashboardPage() {
     try {
       const conversation = await getOrCreateConversation({
         listingId: listing.id,
-        buyerId: user.id,
-        sellerId: listing.user_id,
       });
 
       router.push(`/messages/${conversation.id}`);
@@ -244,4 +242,5 @@ function Stat({ label, value }: { label: string; value: any }) {
     </div>
   );
 }
+
 

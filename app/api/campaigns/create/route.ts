@@ -1,77 +1,136 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
+
+const MAX_TITLE_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 5000;
 
 export async function POST(req: Request) {
   try {
-    // ✅ Supabase client must be INSIDE handler
-     const supabase = await createServerSupabase();
-
-    const body = await req.json();
+    const supabase = await createServerSupabase();
 
     const {
-      user_id,
-      listing_id,
-      title,
-      budget,
-      duration_days,
-    } = body;
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    // ✅ validation
-    if (!user_id || !listing_id) {
+    if (authError || !user) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        {
+          success: false,
+          error: "UNAUTHENTICATED",
+        },
+        { status: 401 }
+      );
+    }
+
+    let body: unknown;
+
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "INVALID_JSON",
+        },
         { status: 400 }
       );
     }
 
-    // ✅ compute end date safely
-    const endDate = new Date();
-    endDate.setDate(
-      endDate.getDate() + Number(duration_days || 0)
-    );
+    if (!body || typeof body !== "object") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "INVALID_REQUEST",
+        },
+        { status: 400 }
+      );
+    }
 
-    // ✅ create campaign
+    const input = body as Record<string, unknown>;
+
+    const title =
+      typeof input.title === "string"
+        ? input.title.trim()
+        : "";
+
+    const description =
+      typeof input.description === "string"
+        ? input.description.trim()
+        : "";
+
+    if (!title) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "TITLE_REQUIRED",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (title.length > MAX_TITLE_LENGTH) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "TITLE_TOO_LONG",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (description.length > MAX_DESCRIPTION_LENGTH) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "DESCRIPTION_TOO_LONG",
+        },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabase
       .from("campaigns")
       .insert({
-        user_id,
-        listing_id,
-        title: title ?? "",
-        budget: Number(budget ?? 0),
-        end_date: endDate.toISOString(),
+        brand_id: user.id,
+        title,
+        description: description || null,
+        budget: 0,
+        status: "draft",
       })
       .select()
       .single();
 
     if (error) {
+      console.error("Campaign creation failed:", error.message);
+
       return NextResponse.json(
-        { error: error.message },
+        {
+          success: false,
+          error: "CAMPAIGN_CREATE_FAILED",
+        },
         { status: 400 }
       );
     }
 
-    // ✅ update listing safely
-    await supabase
-      .from("listings")
-      .update({
-        campaign_id: data.id,
-        boost_score: 50,
-      })
-      .eq("id", listing_id);
-
-    return NextResponse.json(data);
-  } catch (err: any) {
-    console.error("Campaign create error:", err);
+    return NextResponse.json(
+      {
+        success: true,
+        campaign: data,
+      },
+      { status: 201 }
+    );
+  } catch (error: unknown) {
+    console.error("Campaign create error:", error);
 
     return NextResponse.json(
-      { error: err.message || "Internal Server Error" },
+      {
+        success: false,
+        error: "INTERNAL_SERVER_ERROR",
+      },
       { status: 500 }
     );
   }
 }
-
-
-
-
-
-

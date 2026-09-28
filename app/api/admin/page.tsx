@@ -1,11 +1,5 @@
-import { createServerSupabase } from "@/lib/supabase/server";
-
-/* =========================
-   ADMIN CHECK (TEMP)
-========================= */
-async function requireAdmin() {
-  return true;
-}
+﻿import { createServerSupabase } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 /* =========================
    ADMIN PAGE
@@ -48,4 +42,7 @@ export default async function AdminPage() {
     </div>
   );
 }
+
+
+
 

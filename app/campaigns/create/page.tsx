@@ -1,50 +1,43 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export default function CreateCampaignPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ✅ FIX: create supabase instance
-  const supabase = createBrowserSupabase();
-
   const createCampaign = async () => {
     try {
       setLoading(true);
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        alert("User not authenticated");
-        return;
-      }
-
-      const { error } = await supabase.from("campaigns").insert({
-        user_id: user.id,
-        title,
-        description,
-        budget: 0,
-        status: "draft",
+      const response = await fetch("/api/campaigns/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description,
+        }),
       });
 
-      if (error) {
-        console.error("Campaign error:", error.message);
-        alert(error.message);
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error("Campaign error:", result);
+        alert(result.error || "Unable to create campaign");
         return;
       }
 
       alert("Campaign created!");
-    } catch (err: unknown) {
+    } catch (error: unknown) {
       const message =
-        err instanceof Error ? err.message : "Something went wrong";
+        error instanceof Error
+          ? error.message
+          : "Something went wrong";
 
-      console.error(message);
+      console.error("Campaign creation error:", message);
       alert(message);
     } finally {
       setLoading(false);
@@ -77,4 +70,3 @@ export default function CreateCampaignPage() {
     </div>
   );
 }
-

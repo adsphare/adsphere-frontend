@@ -1,64 +1,28 @@
-import { createBrowserClient } from "@supabase/ssr";
-
-function getSupabase() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-  );
-}
-
 export async function getOrCreateConversation({
   listingId,
-  buyerId,
-  sellerId,
 }: {
   listingId: string;
-  buyerId: string;
-  sellerId: string;
 }) {
-  const supabase = getSupabase();
+  const response = await fetch("/api/conversations/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      listingId,
+    }),
+  });
 
-  // 1. check existing conversation
-  const { data: existing, error: findError } = await supabase
-    .from("conversations")
-    .select("*")
-    .eq("listing_id", listingId)
-    .eq("buyer_id", buyerId)
-    .eq("seller_id", sellerId)
-    .maybeSingle();
+  const payload = await response.json().catch(() => null);
 
-  if (findError) {
-    console.error("find conversation error:", findError);
-    throw findError;
+  if (!response.ok) {
+    throw new Error(
+      typeof payload?.error === "string"
+        ? payload.error
+        : "Failed to create conversation"
+    );
   }
 
-  if (existing) return existing;
-
-  // 2. create new conversation
-  const { data, error } = await supabase
-    .from("conversations")
-    .insert([
-      {
-        listing_id: listingId,
-        buyer_id: buyerId,
-        seller_id: sellerId,
-        status: "active",
-        escrow_status: "pending",
-      },
-    ])
-    .select()
-    .single();
-
-  if (error) {
-    console.error("create conversation error:", error);
-    throw error;
-  }
-
-  return data;
+  return payload;
 }
-
-
-
-
-
-

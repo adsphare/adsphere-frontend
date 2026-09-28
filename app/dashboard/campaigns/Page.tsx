@@ -1,15 +1,29 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
 import Link from "next/link";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 const supabase = createBrowserSupabase();
 
+type Campaign = {
+  id: string;
+  title: string;
+  budget: number | null;
+  status: string | null;
+};
+
+type Listing = {
+  id: string;
+  title: string;
+  boost_score: number | null;
+};
+
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [listings, setListings] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
 
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -24,108 +38,155 @@ export default function CampaignsPage() {
   }, []);
 
   async function init() {
-    const { data } = await supabase.auth.getUser();
-    const user = data?.user;
+    const { data, error } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (error || !data.user) {
       window.location.href = "/auth/login";
       return;
     }
 
-    setUserId(user.id);
+    const id = data.user.id;
 
-    await fetchListings(user.id);
-    await fetchCampaigns(user.id);
+    setUserId(id);
+
+    await Promise.all([
+      fetchListings(id),
+      fetchCampaigns(id),
+    ]);
 
     setLoading(false);
   }
 
-  async function fetchListings(userId: string) {
-    const { data } = await supabase
+  async function fetchListings(id: string) {
+    const { data, error } = await supabase
       .from("listings")
       .select("id, title, boost_score")
-      .eq("user_id", userId);
-
-    setListings(data || []);
-  }
-
-  async function fetchCampaigns(userId: string) {
-    const { data } = await supabase
-      .from("campaigns")
-      .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", id)
       .order("created_at", { ascending: false });
 
-    setCampaigns(data || []);
+    if (error) {
+      console.error("Failed to load listings:", error);
+      setListings([]);
+      return;
+    }
+
+    setListings((data ?? []) as Listing[]);
+  }
+
+  async function fetchCampaigns(id: string) {
+    const { data, error } = await supabase
+      .from("campaigns")
+      .select("id, title, budget, status")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to load campaigns:", error);
+      setCampaigns([]);
+      return;
+    }
+
+    setCampaigns((data ?? []) as Campaign[]);
   }
 
   async function createCampaign() {
-    if (!form.listing_id || !form.title || !form.budget) {
+    if (creating) return;
+
+    if (!form.listing_id || !form.title.trim() || !form.budget) {
       alert("Fill all fields");
       return;
     }
 
     const budget = Number(form.budget);
 
-    const { error } = await supabase.from("campaigns").insert({
-      user_id: userId,
-      listing_id: form.listing_id,
-      title: form.title,
-      budget,
-      status: "active",
-    });
-
-    if (error) {
-      console.log(error);
+    if (!Number.isFinite(budget) || budget <= 0) {
+      alert("Enter a valid budget");
       return;
     }
 
-    const { data } = await supabase
-      .from("listings")
-      .select("boost_score")
-      .eq("id", form.listing_id)
-      .single();
-
-    const currentBoost = data?.boost_score || 0;
-
-    await supabase
-      .from("listings")
-      .update({
-        boost_score: currentBoost + budget * 2,
-      })
-      .eq("id", form.listing_id);
-
-    setForm({ listing_id: "", title: "", budget: "" });
-
-    await fetchCampaigns(userId!);
-    await fetchListings(userId!);
-
-    alert("Campaign created + listing boosted 🚀");
-  }
-
-  async function boostListing(listingId: string) {
-    const { data } = await supabase
-      .from("listings")
-      .select("boost_score")
-      .eq("id", listingId)
-      .single();
-
-    const current = data?.boost_score || 0;
-
-    const { error } = await supabase
-      .from("listings")
-      .update({
-        boost_score: current + 30,
-      })
-      .eq("id", listingId);
-
-    if (error) {
-      console.log(error);
+    if (!userId) {
+      alert("You must be logged in");
       return;
     }
 
-    alert("Listing boosted 🚀");
+    try {
+      setCreating(true);
+
+      /*
+       * Canonical campaign creation.
+       *
+       * IMPORTANT:
+       * - No direct campaigns INSERT from the browser.
+       * - No user_id is trusted from the client.
+       * - No listing boost mutation occurs here.
+       * - Campaign creation is handled by the authenticated API.
+       */
+      const response = await fetch("/api/campaigns/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: form.title.trim(),
+          description: `Listing: ${form.listing_id}`,
+        }),
+      });
+
+      let result: {
+        success?: boolean;
+        campaign?: Campaign;
+        error?: string;
+      };
+
+      try {
+        result = await response.json();
+      } catch {
+        result = {};
+      }
+
+      if (!response.ok || !result.success) {
+        console.error("Campaign creation failed:", result.error);
+
+        alert(
+          result.error ||
+            "Unable to create campaign"
+        );
+
+        return;
+      }
+
+      setForm({
+        listing_id: "",
+        title: "",
+        budget: "",
+      });
+
+      await fetchCampaigns(userId);
+
+      alert(
+        "Campaign created as a draft. Payment and promotion require the canonical campaign/payment flow."
+      );
+    } catch (error: unknown) {
+      console.error("Campaign creation error:", error);
+
+      alert("Unable to create campaign");
+    } finally {
+      setCreating(false);
+    }
   }
+
+  /*
+   * Direct browser-side boost mutation has intentionally been removed.
+   *
+   * Boosts must only become active through:
+   *
+   * Chapa initialize
+   *   -> verified provider payment
+   *   -> canonical settlement RPC
+   *   -> server/database boost projection
+   *
+   * This prevents clients from manufacturing boost_score.
+   */
 
   if (loading) {
     return (
@@ -137,14 +198,16 @@ export default function CampaignsPage() {
 
   return (
     <main className="min-h-screen bg-[#050816] text-white px-6 py-10">
-
       <div className="max-w-6xl mx-auto">
 
         <div className="flex justify-between items-center mb-10">
           <div>
-            <h1 className="text-3xl font-bold">Campaigns</h1>
+            <h1 className="text-3xl font-bold">
+              Campaigns
+            </h1>
+
             <p className="text-gray-400 text-sm">
-              Manage and boost your ads
+              Manage campaigns and paid promotion
             </p>
           </div>
 
@@ -162,17 +225,28 @@ export default function CampaignsPage() {
           </h2>
 
           <div className="grid md:grid-cols-3 gap-4">
+
             <select
               value={form.listing_id}
               onChange={(e) =>
-                setForm({ ...form, listing_id: e.target.value })
+                setForm({
+                  ...form,
+                  listing_id: e.target.value,
+                })
               }
               className="p-2 bg-black border border-white/10 rounded"
+              disabled={creating}
             >
-              <option value="">Select Listing</option>
-              {listings.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title}
+              <option value="">
+                Select Listing
+              </option>
+
+              {listings.map((listing) => (
+                <option
+                  key={listing.id}
+                  value={listing.id}
+                >
+                  {listing.title}
                 </option>
               ))}
             </select>
@@ -181,50 +255,74 @@ export default function CampaignsPage() {
               placeholder="Campaign Title"
               value={form.title}
               onChange={(e) =>
-                setForm({ ...form, title: e.target.value })
+                setForm({
+                  ...form,
+                  title: e.target.value,
+                })
               }
               className="p-2 bg-black border border-white/10 rounded"
+              disabled={creating}
+              maxLength={200}
             />
 
             <input
               placeholder="Budget"
               type="number"
+              min="0"
+              step="0.01"
               value={form.budget}
               onChange={(e) =>
-                setForm({ ...form, budget: e.target.value })
+                setForm({
+                  ...form,
+                  budget: e.target.value,
+                })
               }
               className="p-2 bg-black border border-white/10 rounded"
+              disabled={creating}
             />
           </div>
 
           <button
             onClick={createCampaign}
-            className="mt-4 px-4 py-2 bg-green-500 rounded"
+            disabled={creating}
+            className="mt-4 px-4 py-2 bg-blue-600 rounded disabled:opacity-50"
           >
-            Create Campaign
+            {creating
+              ? "Creating..."
+              : "Create Campaign"}
           </button>
+
+          <p className="mt-3 text-xs text-white/40">
+            Campaign creation does not activate or boost a listing.
+            Paid promotion is processed through the canonical payment flow.
+          </p>
         </div>
 
         <div className="space-y-4">
           {campaigns.length === 0 && (
-            <p className="text-gray-400">No campaigns yet</p>
+            <p className="text-gray-400">
+              No campaigns yet
+            </p>
           )}
 
-          {campaigns.map((c) => (
+          {campaigns.map((campaign) => (
             <div
-              key={c.id}
+              key={campaign.id}
               className="p-4 border border-white/10 rounded-lg bg-white/5"
             >
               <div className="flex justify-between">
                 <div>
-                  <h3 className="font-bold">{c.title}</h3>
+                  <h3 className="font-bold">
+                    {campaign.title}
+                  </h3>
+
                   <p className="text-gray-400 text-sm">
-                    Budget: ${c.budget}
+                    Budget: {campaign.budget ?? 0}
                   </p>
                 </div>
 
-                <span className="text-green-400 text-sm">
-                  {c.status}
+                <span className="text-blue-400 text-sm">
+                  {campaign.status ?? "unknown"}
                 </span>
               </div>
             </div>
@@ -232,36 +330,52 @@ export default function CampaignsPage() {
         </div>
 
         <div className="mt-10">
-          <h2 className="text-lg font-semibold mb-4">
-            Quick Boost Listings
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold">
+                Listings
+              </h2>
+
+              <p className="text-xs text-white/40">
+                Boost scores are server-controlled.
+              </p>
+            </div>
+
+            <Link
+              href="/dashboard/boost"
+              className="px-3 py-2 bg-blue-600 rounded-lg text-sm"
+            >
+              Manage Boosts
+            </Link>
+          </div>
 
           <div className="grid md:grid-cols-3 gap-4">
-            {listings.map((l) => (
+            {listings.map((listing) => (
               <div
-                key={l.id}
+                key={listing.id}
                 className="p-4 border border-white/10 rounded-lg bg-white/5"
               >
-                <h3>{l.title}</h3>
+                <h3>
+                  {listing.title}
+                </h3>
 
-                <p className="text-xs text-white/40">
-                  Boost score: {l.boost_score || 0}
+                <p className="text-xs text-white/40 mt-2">
+                  Boost score:{" "}
+                  {listing.boost_score ?? 0}
                 </p>
 
-                <button
-                  onClick={() => boostListing(l.id)}
-                  className="mt-3 px-3 py-1 bg-blue-600 rounded"
+                <Link
+                  href="/dashboard/boost"
+                  className="inline-block mt-3 px-3 py-1 bg-blue-600 rounded"
                 >
-                  Boost 🚀
-                </button>
+                  Boost
+                </Link>
               </div>
             ))}
           </div>
         </div>
 
       </div>
-
     </main>
   );
 }
-

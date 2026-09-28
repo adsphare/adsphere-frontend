@@ -9,83 +9,171 @@ export async function POST(req: Request) {
 
     await requireAdmin(supabase);
 
-    const body = await req.json();
-    const { boostId, action } = body;
+    const body = await req.json().catch(() => null);
+
+    const boostId =
+      typeof body?.boostId === "string"
+        ? body.boostId.trim()
+        : "";
+
+    const action =
+      typeof body?.action === "string"
+        ? body.action.trim().toLowerCase()
+        : "";
 
     if (!boostId || !action) {
       return NextResponse.json(
-        { error: "Missing fields" },
+        {
+          error: "Missing boostId or action",
+        },
         { status: 400 }
       );
     }
 
-    // 🔥 ACTIVATE BOOST
+    /*
+     * Financial authority rule:
+     *
+     * A Boost may NEVER be activated by an admin API mutation.
+     *
+     * The only supported activation path is verified provider
+     * payment reconciliation through the canonical settlement
+     * function:
+     *
+     *   settle_chapa_boost_payment(...)
+     *
+     * This prevents an unpaid Boost from becoming active and
+     * prevents this administrative endpoint from becoming a
+     * second financial authority.
+     */
     if (action === "activate") {
-      const expires = new Date();
-      expires.setDate(expires.getDate() + 7);
-
-      const { data, error } = await supabase
-        .from("boosts")
-        .update({
-          status: "active",
-          expires_at: expires.toISOString(),
-        })
-        .eq("id", boostId)
-        .select()
-        .single();
-
-      if (error) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        boost: data,
-      });
+      return NextResponse.json(
+        {
+          error: "Direct boost activation is not permitted",
+          code: "BOOST_ACTIVATION_REQUIRES_PAYMENT_SETTLEMENT",
+        },
+        { status: 409 }
+      );
     }
 
-
-    // ❌ EXPIRE BOOST
+    /*
+     * Administrative expiration is intentionally separate from
+     * payment settlement.
+     *
+     * Expiration does not move money and therefore does not grant
+     * financial value. The listing projection is updated below so
+     * an expired Boost cannot leave the listing incorrectly marked
+     * as boosted.
+     */
     if (action === "expire") {
-      const { data, error } = await supabase
-        .from("boosts")
-        .update({
-          status: "expired",
-          expires_at: new Date().toISOString(),
-        })
-        .eq("id", boostId)
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc(
+        "admin_expire_boost",
+        {
+          p_boost_id: boostId,
+        }
+      );
 
       if (error) {
+        console.error(
+          "ADMIN BOOST EXPIRATION ERROR:",
+          error
+        );
+
+        const message = error.message ?? "";
+
+        if (message.includes("BOOST_NOT_FOUND")) {
+          return NextResponse.json(
+            {
+              error: "Boost not found",
+            },
+            { status: 404 }
+          );
+        }
+
+        if (message.includes("BOOST_NOT_ACTIVE")) {
+          return NextResponse.json(
+            {
+              error: "Only active boosts can be expired",
+              code: "BOOST_NOT_ACTIVE",
+            },
+            { status: 409 }
+          );
+        }
+
+        if (message.includes("ADMIN_REQUIRED")) {
+          return NextResponse.json(
+            {
+              error: "Admin authorization required",
+            },
+            { status: 403 }
+          );
+        }
+
+        if (message.includes("ADMIN_AUTH_REQUIRED")) {
+          return NextResponse.json(
+            {
+              error: "Authentication required",
+            },
+            { status: 401 }
+          );
+        }
+
         return NextResponse.json(
-          { error: error.message },
+          {
+            error: "Unable to expire boost",
+            code: "BOOST_EXPIRATION_FAILED",
+          },
+          { status: 500 }
+        );
+      }
+
+      const expiredBoost = Array.isArray(data)
+        ? data[0]
+        : data;
+
+      if (!expiredBoost) {
+        return NextResponse.json(
+          {
+            error: "Boost expiration returned no result",
+            code: "BOOST_EXPIRATION_NO_RESULT",
+          },
           { status: 500 }
         );
       }
 
       return NextResponse.json({
-        boost: data,
+        success: true,
+        already_expired:
+          expiredBoost.already_expired === true,
+        boost: {
+          id: expiredBoost.id,
+          listing_id: expiredBoost.listing_id,
+          user_id: expiredBoost.user_id,
+          plan: expiredBoost.plan,
+          amount: expiredBoost.amount,
+          status: expiredBoost.status,
+          starts_at: expiredBoost.starts_at,
+          expires_at: expiredBoost.expires_at,
+        },
       });
     }
-
 
     return NextResponse.json(
-      { error: "Invalid action" },
+      {
+        error: "Invalid action",
+      },
       { status: 400 }
     );
+  } catch (err: unknown) {
+    console.error(
+      "ADMIN BOOST ACTION ERROR:",
+      err instanceof Error ? err.message : err
+    );
 
-
-  } catch (err: any) {
     return NextResponse.json(
       {
-        error: err.message || "Internal error",
+        error: "Internal server error",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }

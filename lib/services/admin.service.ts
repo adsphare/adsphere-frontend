@@ -55,50 +55,6 @@ export async function getBoosts() {
 }
 
 /* =========================
-   ACTIVATE BOOST
-========================= */
-export async function activateBoost(boostId: string, days = 7) {
-  const supabase = await getSupabase();
-
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + days);
-
-  const { data, error } = await supabase
-    .from("boosts")
-    .update({
-      status: "active",
-      expires_at: expiresAt.toISOString(),
-    })
-    .eq("id", boostId)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  return data;
-}
-
-/* =========================
-   EXPIRE BOOST
-========================= */
-export async function expireBoost(boostId: string) {
-  const supabase = await getSupabase();
-
-  const { data, error } = await supabase
-    .from("boosts")
-    .update({
-      status: "expired",
-    })
-    .eq("id", boostId)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  return data;
-}
-
-/* =========================
    DELETE LISTING (ADMIN)
 ========================= */
 export async function deleteListing(listingId: string) {

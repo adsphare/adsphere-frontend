@@ -1,8 +1,7 @@
+﻿
 import { db } from "@/lib/core/db";
 import { eventBus } from "@/lib/core/events";
 
-import { evaluateMessage } from "@/lib/core/enforcement/policyEngine";
-import { handleEnforcement } from "@/lib/core/enforcement/actionHandler";
 
 /* =========================
    TYPES
@@ -83,19 +82,43 @@ export const chat = {
      MARK AS READ
   ========================= */
   async markAsRead(conversationId: string, userId: string) {
-    const { error } = await db
-      .from("conversations")
-      .update({
-        last_read_at: new Date().toISOString(),
-        last_read_by: userId,
-      })
-      .eq("id", conversationId);
+    const { data: userData, error: authError } =
+      await db.auth.getUser();
 
-    if (error) throw new Error(error.message);
+    if (authError || !userData.user) {
+      throw new Error("UNAUTHORIZED");
+    }
+
+    if (userData.user.id !== userId) {
+      throw new Error("USER_MISMATCH");
+    }
+
+    const response = await fetch(
+      "/api/conversations/read",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId,
+        }),
+      }
+    );
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        result?.error || "CONVERSATION_READ_FAILED"
+      );
+    }
+
+    return result;
   },
 
   /* =========================
-     UNREAD COUNT (FIXED TYPES)
+     UNREAD COUNT
   ========================= */
   async getUnreadCount(conversationId: string, userId: string) {
     const { data: messages, error } = await db
@@ -127,21 +150,29 @@ export const chat = {
   },
 
   /* =========================
-     SEND MESSAGE (ENFORCED CORE)
+     SEND MESSAGE
   ========================= */
   async sendMessage({
     conversationId,
-    senderId,
     content,
   }: {
     conversationId: string;
-    senderId: string;
     content: string;
   }) {
-    // 1. LOAD CONVERSATION
+    const {
+      data: { user },
+      error: userError,
+    } = await db.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error("Authentication required");
+    }
+
+    const senderId = user.id;
+
     const { data: convo, error: convoError } = await db
       .from("conversations")
-      .select("*")
+      .select("id, buyer_id, seller_id, owner_id, listing_id")
       .eq("id", conversationId)
       .single();
 
@@ -149,46 +180,61 @@ export const chat = {
       throw new Error("Conversation not found");
     }
 
-    // 2. DETERMINE RECEIVER
-    const receiverId =
-      senderId === convo.buyer_id ? convo.seller_id : convo.buyer_id;
+    const isParticipant =
+      convo.buyer_id === senderId ||
+      convo.seller_id === senderId ||
+      convo.owner_id === senderId;
 
-    // 3. POLICY CHECK
-    const decision = await evaluateMessage({
-      userId: senderId,
-      conversationId,
-      content,
-      orderId: convo.order_id || convo.id,
-    });
-
-    const allowed = handleEnforcement(decision, {
-      userId: senderId,
-      conversationId,
-      content,
-    });
-
-    if (!allowed) {
-      throw new Error("Message blocked by AdSphera Enforcement System");
+    if (!isParticipant) {
+      throw new Error("Not authorized for this conversation");
     }
 
-    // 4. INSERT MESSAGE
-    const { data, error } = await db
-      .from("messages")
-      .insert({
-        conversation_id: conversationId,
-        sender_id: senderId,
+    const receiverId =
+      senderId === convo.buyer_id ? convo.seller_id : convo.buyer_id;
+/*
+     * Canonical message creation path.
+     *
+     * The API route authenticates the user and delegates the
+     * actual write to the atomic database transaction:
+     *
+     *   messages
+     *   trust_events
+     *   profiles.trust_score
+     *
+     * No direct message INSERT or legacy trust RPC is performed here.
+     */
+    const response = await fetch("/api/messages/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        conversationId,
         content,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+        type: "chat",
+      }),
+    });
 
-    if (error) throw new Error(error.message);
+    const result = await response.json().catch(() => null);
 
-    // 5. EVENT SYSTEM
+    if (!response.ok) {
+      throw new Error(
+        typeof result?.error === "string"
+          ? result.error
+          : "Message send failed"
+      );
+    }
+
+    const data = result?.message;
+
+    if (!data?.id) {
+      throw new Error("Message creation returned an invalid response");
+    }
+
     eventBus.emit({
       type: "message_sent",
       data: {
+        messageId: data.id,
         conversationId,
         senderId,
         receiverId,
@@ -203,7 +249,10 @@ export const chat = {
   /* =========================
      REALTIME SUBSCRIPTION
   ========================= */
-  subscribe(conversationId: string, callback: (msg: Message) => void) {
+  subscribe(
+    conversationId: string,
+    callback: (msg: Message) => void
+  ) {
     const channel = db
       .channel(`chat-${conversationId}`)
       .on(
@@ -225,3 +274,7 @@ export const chat = {
     };
   },
 };
+
+
+
+

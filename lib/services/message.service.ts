@@ -1,4 +1,4 @@
-import { chat } from "@/lib/core/chat";
+﻿import { chat } from "@/lib/core/chat";
 import { createBrowserSupabase } from "@/lib/supabase";
 
 export const messageService = {
@@ -8,12 +8,10 @@ export const messageService = {
 
   async send(
     conversationId: string,
-    senderId: string,
     content: string
   ) {
     return chat.sendMessage({
       conversationId,
-      senderId,
       content,
     });
   },
@@ -35,3 +33,6 @@ export const messageService = {
     return user ?? null;
   },
 };
+
+
+
